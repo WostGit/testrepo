@@ -2,17 +2,17 @@ Qwen live benchmark running
 {
   "status": "running",
   "best_case_so_far": {
-    "prompt": "tiny",
-    "max_tokens": 512,
-    "avg_tps": 46.2815,
-    "best_tps": 49.6028,
-    "median_tps": 45.0673,
+    "prompt": "short",
+    "max_tokens": 256,
+    "avg_tps": 49.5215,
+    "best_tps": 50.3925,
+    "median_tps": 49.8276,
     "seconds": [
-      11.5904,
-      11.3608,
-      10.322
+      5.0801,
+      5.1377,
+      5.2953
     ]
   },
-  "cases_completed": 6,
-  "updated_at": "2026-05-26T09:30:38Z"
+  "cases_completed": 7,
+  "updated_at": "2026-05-26T09:30:58Z"
 }
