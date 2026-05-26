@@ -16,7 +16,7 @@ concurrency:
 jobs:
   benchmark:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,12 +33,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade mlx mlx-lm huggingface_hub
 
-      - name: Benchmark Qwen2.5 0.5B with MLX
+      - name: Extended benchmark Qwen2.5 0.5B with MLX
         run: |
-          cat > benchmark_qwen_mlx.py <<'PY'
+          cat > benchmark_qwen_mlx_extended.py <<'PY'
           import json
           import os
           import platform
+          import statistics
           import subprocess
           import sys
           import time
@@ -48,9 +49,14 @@ jobs:
           from mlx_lm import generate, load
 
           model_name = "Qwen/Qwen2.5-0.5B-Instruct"
-          prompt = "Write one concise sentence about why local LLM inference benchmarks matter."
-          warmup_tokens = 8
-          benchmark_tokens = 64
+          prompts = {
+              "short": "Write one concise sentence about why local LLM inference benchmarks matter.",
+              "medium": "In one paragraph, explain the practical tradeoffs of running small language models locally on Apple Silicon.",
+              "long": "You are benchmarking a local language model. Summarize the key factors that affect prefill latency, generation throughput, memory use, and repeatability. Keep the answer focused and technical.",
+          }
+          token_sweep = [32, 64, 128, 256]
+          repeats = 3
+          warmup_tokens = 16
           result_path = Path("mlx-qwen25-05b-benchmark-results.txt")
           json_path = Path("mlx-qwen25-05b-benchmark-results.json")
 
@@ -60,6 +66,12 @@ jobs:
               except Exception as exc:
                   return f"unavailable: {exc}"
 
+          def encode_len(text):
+              try:
+                  return len(tokenizer.encode(text))
+              except Exception:
+                  return None
+
           started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
           load_start = time.perf_counter()
           model, tokenizer = load(model_name)
@@ -67,26 +79,58 @@ jobs:
           load_seconds = time.perf_counter() - load_start
 
           warmup_start = time.perf_counter()
-          _ = generate(model, tokenizer, prompt=prompt, max_tokens=warmup_tokens, verbose=False)
+          _ = generate(model, tokenizer, prompt=prompts["short"], max_tokens=warmup_tokens, verbose=False)
           warmup_seconds = time.perf_counter() - warmup_start
 
-          bench_start = time.perf_counter()
-          generated_text = generate(model, tokenizer, prompt=prompt, max_tokens=benchmark_tokens, verbose=False)
-          bench_seconds = time.perf_counter() - bench_start
-          tokens_per_second = benchmark_tokens / bench_seconds if bench_seconds > 0 else None
+          cases = []
+          best_case = None
+          for prompt_name, prompt in prompts.items():
+              prompt_tokens = encode_len(prompt)
+              for max_tokens in token_sweep:
+                  run_times = []
+                  actual_output_tokens = []
+                  samples = []
+                  for rep in range(1, repeats + 1):
+                      start = time.perf_counter()
+                      output = generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
+                      elapsed = time.perf_counter() - start
+                      run_times.append(elapsed)
+                      actual_tokens = encode_len(output)
+                      actual_output_tokens.append(actual_tokens)
+                      if rep == 1:
+                          samples.append(output[:600])
+                  requested_tps = [max_tokens / t for t in run_times if t > 0]
+                  case = {
+                      "prompt_name": prompt_name,
+                      "prompt_tokens": prompt_tokens,
+                      "requested_output_tokens": max_tokens,
+                      "repeats": repeats,
+                      "seconds": [round(x, 4) for x in run_times],
+                      "requested_tokens_per_second": [round(x, 4) for x in requested_tps],
+                      "avg_requested_tokens_per_second": round(statistics.mean(requested_tps), 4),
+                      "best_requested_tokens_per_second": round(max(requested_tps), 4),
+                      "median_requested_tokens_per_second": round(statistics.median(requested_tps), 4),
+                      "avg_seconds": round(statistics.mean(run_times), 4),
+                      "best_seconds": round(min(run_times), 4),
+                      "actual_output_tokens_encoded": actual_output_tokens,
+                      "sample_output": samples[0] if samples else "",
+                  }
+                  cases.append(case)
+                  if best_case is None or case["best_requested_tokens_per_second"] > best_case["best_requested_tokens_per_second"]:
+                      best_case = case
 
           finished_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
           results = {
-              "benchmark": "Qwen2.5 0.5B MLX generation benchmark",
+              "benchmark": "Qwen2.5 0.5B MLX extended generation benchmark",
               "model": model_name,
-              "prompt": prompt,
-              "requested_output_tokens": benchmark_tokens,
+              "prompts": prompts,
+              "token_sweep": token_sweep,
+              "repeats": repeats,
               "warmup_tokens": warmup_tokens,
               "load_seconds": round(load_seconds, 4),
               "warmup_seconds": round(warmup_seconds, 4),
-              "generation_seconds": round(bench_seconds, 4),
-              "tokens_per_second_requested": round(tokens_per_second, 4) if tokens_per_second is not None else None,
-              "generated_text": generated_text,
+              "best_case": best_case,
+              "cases": cases,
               "runner": os.environ.get("RUNNER_NAME"),
               "runner_os": os.environ.get("RUNNER_OS"),
               "runner_arch": os.environ.get("RUNNER_ARCH"),
@@ -99,6 +143,7 @@ jobs:
               "platform": platform.platform(),
               "machine": platform.machine(),
               "macos_version": command_output(["sw_vers"]),
+              "hardware": command_output(["system_profiler", "SPHardwareDataType"]),
               "metal_device_probe": command_output(["python", "-c", "import mlx.core as mx; print(mx.default_device())"]),
               "started_at": started_at,
               "finished_at": finished_at,
@@ -106,42 +151,55 @@ jobs:
 
           json_path.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
 
-          text = f"""Qwen2.5 0.5B MLX Benchmark Results
-          ====================================
-          Model: {results['model']}
-          Runner: {results['runner']} ({results['runner_os']}, {results['runner_arch']})
-          Machine: {results['machine']}
-          Platform: {results['platform']}
-          GitHub repo: {results['github_repository']}
-          Commit: {results['github_sha']}
-          Run ID: {results['github_run_id']}
-          Run number: {results['github_run_number']}
-          Actor: {results['github_actor']}
-          Started at: {results['started_at']}
-          Finished at: {results['finished_at']}
-
-          Load time: {results['load_seconds']} s
-          Warmup: {results['warmup_tokens']} tokens in {results['warmup_seconds']} s
-          Benchmark: {results['requested_output_tokens']} requested tokens in {results['generation_seconds']} s
-          Throughput: {results['tokens_per_second_requested']} requested tokens/s
-
-          Prompt:
-          {results['prompt']}
-
-          Generated text:
-          {results['generated_text']}
-
-          macOS version:
-          {results['macos_version']}
-
-          MLX default device:
-          {results['metal_device_probe']}
-          """
-          result_path.write_text(text, encoding="utf-8")
-          print(text)
+          lines = []
+          lines.append("Qwen2.5 0.5B MLX Extended Benchmark Results")
+          lines.append("============================================")
+          lines.append(f"Model: {model_name}")
+          lines.append(f"Runner: {results['runner']} ({results['runner_os']}, {results['runner_arch']})")
+          lines.append(f"Machine: {results['machine']}")
+          lines.append(f"Platform: {results['platform']}")
+          lines.append(f"GitHub repo: {results['github_repository']}")
+          lines.append(f"Commit: {results['github_sha']}")
+          lines.append(f"Run ID: {results['github_run_id']}")
+          lines.append(f"Run number: {results['github_run_number']}")
+          lines.append(f"Started at: {started_at}")
+          lines.append(f"Finished at: {finished_at}")
+          lines.append("")
+          lines.append(f"Load time: {results['load_seconds']} s")
+          lines.append(f"Warmup: {warmup_tokens} tokens in {results['warmup_seconds']} s")
+          lines.append("")
+          if best_case:
+              lines.append("Best observed case")
+              lines.append("------------------")
+              lines.append(f"Prompt: {best_case['prompt_name']}")
+              lines.append(f"Requested output tokens: {best_case['requested_output_tokens']}")
+              lines.append(f"Best throughput: {best_case['best_requested_tokens_per_second']} requested tokens/s")
+              lines.append(f"Average throughput: {best_case['avg_requested_tokens_per_second']} requested tokens/s")
+              lines.append(f"Times: {best_case['seconds']}")
+              lines.append("")
+          lines.append("Sweep results")
+          lines.append("-------------")
+          lines.append("prompt,max_tokens,avg_tps,best_tps,median_tps,avg_seconds,best_seconds,prompt_tokens")
+          for case in cases:
+              lines.append(f"{case['prompt_name']},{case['requested_output_tokens']},{case['avg_requested_tokens_per_second']},{case['best_requested_tokens_per_second']},{case['median_requested_tokens_per_second']},{case['avg_seconds']},{case['best_seconds']},{case['prompt_tokens']}")
+          lines.append("")
+          lines.append("macOS version")
+          lines.append("-------------")
+          lines.append(results["macos_version"])
+          lines.append("")
+          lines.append("MLX default device")
+          lines.append("------------------")
+          lines.append(results["metal_device_probe"])
+          lines.append("")
+          lines.append("Sample output from best case")
+          lines.append("----------------------------")
+          lines.append(best_case.get("sample_output", "") if best_case else "")
+          lines.append("")
+          result_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print(result_path.read_text(encoding="utf-8"))
           PY
 
-          python benchmark_qwen_mlx.py
+          python benchmark_qwen_mlx_extended.py
 
       - name: Commit benchmark results back to repo
         if: always()
@@ -149,5 +207,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add mlx-qwen25-05b-benchmark-results.txt mlx-qwen25-05b-benchmark-results.json || true
-          git commit -m "Write MLX Qwen benchmark results" || echo "No benchmark result changes to commit"
+          git commit -m "Write extended MLX Qwen benchmark results" || echo "No benchmark result changes to commit"
           git push || echo "No benchmark results pushed"
