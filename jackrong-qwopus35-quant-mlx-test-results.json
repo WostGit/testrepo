@@ -1,0 +1,78 @@
+{
+  "status": "error",
+  "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+  "original_attempted_model_id": "Jackrong/Qwopus3.5-4B-v3",
+  "model_url": "https://huggingface.co/Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+  "started_at": "2026-05-26T10:07:43Z",
+  "github_sha": "48dc1f2a3fe9286791bb8163d9f813b3bb2581bf",
+  "github_run_id": "26445928337",
+  "github_run_number": "4",
+  "runner": "GitHub Actions 1000004753",
+  "runner_os": "macOS",
+  "runner_arch": "ARM64",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "macos_version": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4\nBuildVersion:\t\t25E246",
+  "updated_at": "2026-05-26T10:08:42Z",
+  "huggingface": {
+    "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+    "sha": "7f75eaf78e0da7e23ef84471aaa7331f0d8de6e2",
+    "private": false,
+    "tags": [
+      "mlx",
+      "safetensors",
+      "qwen3_5",
+      "unsloth",
+      "qwen",
+      "qwen3.5",
+      "reasoning",
+      "chain-of-thought",
+      "lora",
+      "competitive-programming",
+      "text-generation",
+      "conversational",
+      "en",
+      "zh",
+      "ko",
+      "base_model:Jackrong/Qwopus3.5-9B-v3",
+      "base_model:adapter:Jackrong/Qwopus3.5-9B-v3",
+      "license:apache-2.0",
+      "4-bit",
+      "region:us"
+    ],
+    "pipeline_tag": "text-generation",
+    "library_name": "mlx",
+    "model_file_bytes_selected": 5058234647,
+    "files": [
+      {
+        "name": "config.json",
+        "size": 3157
+      },
+      {
+        "name": "model.safetensors",
+        "size": 5038160953
+      },
+      {
+        "name": "model.safetensors.index.json",
+        "size": 81194
+      },
+      {
+        "name": "tokenizer.json",
+        "size": 19989343
+      }
+    ]
+  },
+  "mlx_default_device_before_load": "Device(gpu, 0)",
+  "load_seconds": 57.1924,
+  "mlx_default_device_after_load": "Device(gpu, 0)",
+  "tests": [
+    {
+      "name": "one_token_smoke",
+      "prompt": "Hi.",
+      "max_tokens": 1,
+      "status": "started"
+    }
+  ],
+  "error": "KeyError('ok')",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/runner/work/testrepo/testrepo/test_jackrong_qwopus35_quant_mlx.py\", line 175, in <module>\n    save_result(result, f'{name}_started')\n  File \"/Users/runner/work/testrepo/testrepo/test_jackrong_qwopus35_quant_mlx.py\", line 85, in save_result\n    lines.append(f\"| {t['name']} | {t['ok']} | {t['max_tokens']} | {t['elapsed_seconds']} | {t['requested_tokens_per_second']} | {t['output_tokens_encoded']} |\")\n                                    ~^^^^^^\nKeyError: 'ok'\n",
+  "finished_at": "2026-05-26T10:08:42Z"
+}

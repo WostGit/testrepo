@@ -1,0 +1,21 @@
+Testing quantized MLX Hugging Face model: Jackrong/MLX-Qwopus3.5-9B-v3-4bit
+Original BF16/F32 model from failed run: Jackrong/Qwopus3.5-4B-v3
+GitHub SHA: 48dc1f2a3fe9286791bb8163d9f813b3bb2581bf
+Runner: GitHub Actions 1000004753 macOS ARM64
+macOS: ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
+Hugging Face metadata loaded: model_id=Jackrong/MLX-Qwopus3.5-9B-v3-4bit
+Tags: ['mlx', 'safetensors', 'qwen3_5', 'unsloth', 'qwen', 'qwen3.5', 'reasoning', 'chain-of-thought', 'lora', 'competitive-programming', 'text-generation', 'conversational', 'en', 'zh', 'ko', 'base_model:Jackrong/Qwopus3.5-9B-v3', 'base_model:adapter:Jackrong/Qwopus3.5-9B-v3', 'license:apache-2.0', '4-bit', 'region:us']
+Approx selected model/config/tokenizer bytes: 5058234647
+MLX default device before load: Device(gpu, 0)
+Using tokenizer_config={fix_mistral_regex: True}
+Loaded model in 57.1924s on Device(gpu, 0)
+ERROR: KeyError('ok')
+Traceback (most recent call last):
+  File "/Users/runner/work/testrepo/testrepo/test_jackrong_qwopus35_quant_mlx.py", line 175, in <module>
+    save_result(result, f'{name}_started')
+  File "/Users/runner/work/testrepo/testrepo/test_jackrong_qwopus35_quant_mlx.py", line 85, in save_result
+    lines.append(f"| {t['name']} | {t['ok']} | {t['max_tokens']} | {t['elapsed_seconds']} | {t['requested_tokens_per_second']} | {t['output_tokens_encoded']} |")
+                                    ~^^^^^^
+KeyError: 'ok'
+
+python_exit=1
