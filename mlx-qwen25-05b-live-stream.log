@@ -7,3 +7,4 @@ run_number=2
 runner=GitHub Actions 1000004749 macOS ARM64
 platform=macOS-26.4-arm64-arm-64bit
 sw_vers=ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
+mlx_device=Device(gpu, 0)
