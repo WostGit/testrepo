@@ -1,0 +1,245 @@
+name: Test jackrong Qwopus 3.5 MLX
+
+on:
+  push:
+    branches:
+      - chatgpt-new-branch
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-qwopus-mlx:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade mlx mlx-lm huggingface_hub
+
+      - name: Discover and test smallest jackrong Qwopus 3.5 MLX model
+        run: |
+          cat > test_jackrong_qwopus35_mlx.py <<'PY'
+          import json
+          import os
+          import platform
+          import re
+          import subprocess
+          import sys
+          import time
+          import traceback
+          from pathlib import Path
+
+          from huggingface_hub import HfApi
+
+          RESULT_MD = Path('jackrong-qwopus35-mlx-test-results.md')
+          RESULT_JSON = Path('jackrong-qwopus35-mlx-test-results.json')
+          LOG = Path('jackrong-qwopus35-mlx-test.log')
+
+          def log(msg):
+              text = str(msg)
+              print(text, flush=True)
+              with LOG.open('a', encoding='utf-8') as f:
+                  f.write(text + '\n')
+
+          def cmd(args):
+              try:
+                  return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT).strip()
+              except Exception as exc:
+                  return f'unavailable: {exc}'
+
+          def model_file_size(info):
+              total = 0
+              files = []
+              for s in getattr(info, 'siblings', []) or []:
+                  name = getattr(s, 'rfilename', '') or ''
+                  size = getattr(s, 'size', None) or 0
+                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf', '.mlx')) or 'model' in name.lower():
+                      total += int(size or 0)
+                      files.append({'name': name, 'size': int(size or 0)})
+              return total, files
+
+          def is_qwopus35(model_id):
+              x = model_id.lower()
+              has_qwopus = 'qwopus' in x or ('qw' in x and 'opus' in x)
+              has_35 = any(t in x for t in ['3.5', '3-5', '3_5', '35'])
+              return has_qwopus and has_35
+
+          def is_mlx_candidate(model_id, tags):
+              x = model_id.lower()
+              tag_text = ' '.join([str(t).lower() for t in tags or []])
+              return 'mlx' in x or 'mlx' in tag_text
+
+          started = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+          LOG.write_text('', encoding='utf-8')
+          result = {
+              'status': 'started',
+              'started_at': started,
+              'github_sha': os.environ.get('GITHUB_SHA'),
+              'github_run_id': os.environ.get('GITHUB_RUN_ID'),
+              'github_run_number': os.environ.get('GITHUB_RUN_NUMBER'),
+              'runner': os.environ.get('RUNNER_NAME'),
+              'runner_os': os.environ.get('RUNNER_OS'),
+              'runner_arch': os.environ.get('RUNNER_ARCH'),
+              'platform': platform.platform(),
+              'macos_version': cmd(['sw_vers']),
+          }
+
+          try:
+              log('Starting jackrong Qwopus 3.5 MLX discovery/test')
+              log(f"GitHub SHA: {result['github_sha']}")
+              log(f"Runner: {result['runner']} {result['runner_os']} {result['runner_arch']}")
+              log('macOS: ' + result['macos_version'].replace('\n', ' | '))
+
+              api = HfApi()
+              searches = ['qwopus', 'Qwopus', 'opus', '3.5']
+              seen = {}
+              for search in searches:
+                  log(f'Searching Hugging Face models: author=jackrong search={search!r}')
+                  for m in api.list_models(author='jackrong', search=search, full=True, limit=100):
+                      seen[m.modelId] = m
+              all_models = sorted(seen.values(), key=lambda m: m.modelId.lower())
+              log(f'Found {len(all_models)} jackrong models matching broad searches')
+
+              candidates = []
+              diagnostics = []
+              for m in all_models:
+                  tags = getattr(m, 'tags', []) or []
+                  mid = m.modelId
+                  diag = {'model_id': mid, 'tags': tags}
+                  diagnostics.append(diag)
+                  if is_qwopus35(mid) and is_mlx_candidate(mid, tags):
+                      info = api.model_info(mid, files_metadata=True)
+                      total_size, files = model_file_size(info)
+                      candidates.append({
+                          'model_id': mid,
+                          'tags': tags,
+                          'model_file_bytes': total_size,
+                          'model_files': files[:20],
+                      })
+
+              candidates.sort(key=lambda c: (c['model_file_bytes'] or 10**30, c['model_id'].lower()))
+              result['discovered_models'] = diagnostics
+              result['candidates'] = candidates
+              log(f'Filtered to {len(candidates)} Qwopus 3.5 MLX-looking candidates')
+
+              if not candidates:
+                  result['status'] = 'no_matching_model'
+                  result['message'] = 'No jackrong model matching qwopus + 3.5 + mlx was found by Hugging Face Hub search.'
+                  raise SystemExit(0)
+
+              selected = candidates[0]['model_id']
+              result['selected_model'] = candidates[0]
+              log(f'Selected smallest candidate: {selected}')
+              log(f"Estimated model-file bytes: {candidates[0]['model_file_bytes']}")
+
+              import mlx.core as mx
+              from mlx_lm import generate, load
+
+              result['mlx_default_device_before_load'] = str(mx.default_device())
+              load_start = time.perf_counter()
+              model, tokenizer = load(selected)
+              mx.eval(model.parameters())
+              load_seconds = time.perf_counter() - load_start
+              result['load_seconds'] = round(load_seconds, 4)
+              result['mlx_default_device_after_load'] = str(mx.default_device())
+              log(f'Loaded model in {load_seconds:.4f}s on {mx.default_device()}')
+
+              prompts = [
+                  'Reply with exactly one short sentence confirming the model is working.',
+                  'Give two bullet points about MLX inference performance testing.',
+              ]
+              tests = []
+              for i, prompt in enumerate(prompts, 1):
+                  t0 = time.perf_counter()
+                  output = generate(model, tokenizer, prompt=prompt, max_tokens=32, verbose=False)
+                  elapsed = time.perf_counter() - t0
+                  try:
+                      out_tokens = len(tokenizer.encode(output))
+                  except Exception:
+                      out_tokens = None
+                  ok = bool(output and output.strip())
+                  test = {
+                      'name': f'generation_smoke_{i}',
+                      'prompt': prompt,
+                      'elapsed_seconds': round(elapsed, 4),
+                      'requested_tokens_per_second': round(32 / elapsed, 4) if elapsed > 0 else None,
+                      'output_tokens_encoded': out_tokens,
+                      'ok': ok,
+                      'output_preview': output[:500],
+                  }
+                  tests.append(test)
+                  log(f"{test['name']}: ok={ok} seconds={test['elapsed_seconds']} requested_tps={test['requested_tokens_per_second']} tokens={out_tokens}")
+
+              result['tests'] = tests
+              result['status'] = 'passed' if all(t['ok'] for t in tests) else 'failed'
+
+          except SystemExit:
+              pass
+          except Exception as exc:
+              result['status'] = 'error'
+              result['error'] = repr(exc)
+              result['traceback'] = traceback.format_exc()
+              log('ERROR: ' + repr(exc))
+              log(result['traceback'])
+          finally:
+              result['finished_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+              RESULT_JSON.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+              lines = [
+                  '# jackrong Qwopus 3.5 MLX test results',
+                  '',
+                  f"Status: `{result.get('status')}`",
+                  f"Started: `{result.get('started_at')}`",
+                  f"Finished: `{result.get('finished_at')}`",
+                  f"Runner: `{result.get('runner')} {result.get('runner_os')} {result.get('runner_arch')}`",
+                  f"Platform: `{result.get('platform')}`",
+                  f"GitHub SHA: `{result.get('github_sha')}`",
+                  '',
+              ]
+              if result.get('selected_model'):
+                  lines += [
+                      '## Selected model',
+                      f"`{result['selected_model']['model_id']}`",
+                      f"Estimated model file bytes: `{result['selected_model']['model_file_bytes']}`",
+                      '',
+                  ]
+              if result.get('message'):
+                  lines += ['## Message', result['message'], '']
+              if result.get('tests'):
+                  lines += ['## Tests', '| Test | OK | Seconds | Requested tok/s | Encoded output tokens |', '|---|---:|---:|---:|---:|']
+                  for t in result['tests']:
+                      lines.append(f"| {t['name']} | {t['ok']} | {t['elapsed_seconds']} | {t['requested_tokens_per_second']} | {t['output_tokens_encoded']} |")
+                  lines.append('')
+                  lines.append('## Output previews')
+                  for t in result['tests']:
+                      lines.append(f"### {t['name']}")
+                      lines.append('```text')
+                      lines.append(t['output_preview'])
+                      lines.append('```')
+                      lines.append('')
+              lines += ['## Candidate count', f"`{len(result.get('candidates', []))}`", '', 'See JSON and log files for full discovery diagnostics.']
+              RESULT_MD.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+              log('Wrote result files')
+          PY
+          python test_jackrong_qwopus35_mlx.py
+
+      - name: Commit test results back to branch
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jackrong-qwopus35-mlx-test-results.md jackrong-qwopus35-mlx-test-results.json jackrong-qwopus35-mlx-test.log || true
+          git commit -m "Write jackrong Qwopus 3.5 MLX test results [skip ci]" || echo "No result changes to commit"
+          git push || echo "No result push performed"
