@@ -1,1 +1,18 @@
-Qwen live benchmark started
+Qwen live benchmark running
+{
+  "status": "running",
+  "best_case_so_far": {
+    "prompt": "tiny",
+    "max_tokens": 64,
+    "avg_tps": 38.027,
+    "best_tps": 43.2145,
+    "median_tps": 35.6851,
+    "seconds": [
+      1.7935,
+      1.8191,
+      1.481
+    ]
+  },
+  "cases_completed": 1,
+  "updated_at": "2026-05-26T09:28:56Z"
+}
