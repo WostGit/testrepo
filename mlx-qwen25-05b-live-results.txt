@@ -13,6 +13,6 @@ Qwen live benchmark running
       1.481
     ]
   },
-  "cases_completed": 1,
-  "updated_at": "2026-05-26T09:28:56Z"
+  "cases_completed": 2,
+  "updated_at": "2026-05-26T09:29:12Z"
 }
