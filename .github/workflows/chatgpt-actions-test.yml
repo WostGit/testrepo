@@ -1,4 +1,4 @@
-name: ChatGPT Actions Test
+name: ChatGPT MLX Qwen Benchmark
 
 on:
   push:
@@ -9,32 +9,145 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: mlx-qwen-benchmark
+  cancel-in-progress: false
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  benchmark:
+    runs-on: macos-26
+    timeout-minutes: 60
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Create output file
-        run: |
-          cat > action-output.txt <<EOF
-          GitHub Actions test file ran successfully.
-          Repository: $GITHUB_REPOSITORY
-          Commit: $GITHUB_SHA
-          Run ID: $GITHUB_RUN_ID
-          Run number: $GITHUB_RUN_NUMBER
-          Actor: $GITHUB_ACTOR
-          EOF
-          cat action-output.txt
-          test -f chatgpt-test-file.txt
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Commit output file back to repo
+      - name: Install MLX dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade mlx mlx-lm huggingface_hub
+
+      - name: Benchmark Qwen2.5 0.5B with MLX
+        run: |
+          cat > benchmark_qwen_mlx.py <<'PY'
+          import json
+          import os
+          import platform
+          import subprocess
+          import sys
+          import time
+          from pathlib import Path
+
+          import mlx.core as mx
+          from mlx_lm import generate, load
+
+          model_name = "Qwen/Qwen2.5-0.5B-Instruct"
+          prompt = "Write one concise sentence about why local LLM inference benchmarks matter."
+          warmup_tokens = 8
+          benchmark_tokens = 64
+          result_path = Path("mlx-qwen25-05b-benchmark-results.txt")
+          json_path = Path("mlx-qwen25-05b-benchmark-results.json")
+
+          def command_output(cmd):
+              try:
+                  return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT).strip()
+              except Exception as exc:
+                  return f"unavailable: {exc}"
+
+          started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          load_start = time.perf_counter()
+          model, tokenizer = load(model_name)
+          mx.eval(model.parameters())
+          load_seconds = time.perf_counter() - load_start
+
+          warmup_start = time.perf_counter()
+          _ = generate(model, tokenizer, prompt=prompt, max_tokens=warmup_tokens, verbose=False)
+          warmup_seconds = time.perf_counter() - warmup_start
+
+          bench_start = time.perf_counter()
+          generated_text = generate(model, tokenizer, prompt=prompt, max_tokens=benchmark_tokens, verbose=False)
+          bench_seconds = time.perf_counter() - bench_start
+          tokens_per_second = benchmark_tokens / bench_seconds if bench_seconds > 0 else None
+
+          finished_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          results = {
+              "benchmark": "Qwen2.5 0.5B MLX generation benchmark",
+              "model": model_name,
+              "prompt": prompt,
+              "requested_output_tokens": benchmark_tokens,
+              "warmup_tokens": warmup_tokens,
+              "load_seconds": round(load_seconds, 4),
+              "warmup_seconds": round(warmup_seconds, 4),
+              "generation_seconds": round(bench_seconds, 4),
+              "tokens_per_second_requested": round(tokens_per_second, 4) if tokens_per_second is not None else None,
+              "generated_text": generated_text,
+              "runner": os.environ.get("RUNNER_NAME"),
+              "runner_os": os.environ.get("RUNNER_OS"),
+              "runner_arch": os.environ.get("RUNNER_ARCH"),
+              "github_repository": os.environ.get("GITHUB_REPOSITORY"),
+              "github_sha": os.environ.get("GITHUB_SHA"),
+              "github_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "github_run_number": os.environ.get("GITHUB_RUN_NUMBER"),
+              "github_actor": os.environ.get("GITHUB_ACTOR"),
+              "python_version": sys.version.replace("\n", " "),
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "macos_version": command_output(["sw_vers"]),
+              "metal_device_probe": command_output(["python", "-c", "import mlx.core as mx; print(mx.default_device())"]),
+              "started_at": started_at,
+              "finished_at": finished_at,
+          }
+
+          json_path.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
+
+          text = f"""Qwen2.5 0.5B MLX Benchmark Results
+          ====================================
+          Model: {results['model']}
+          Runner: {results['runner']} ({results['runner_os']}, {results['runner_arch']})
+          Machine: {results['machine']}
+          Platform: {results['platform']}
+          GitHub repo: {results['github_repository']}
+          Commit: {results['github_sha']}
+          Run ID: {results['github_run_id']}
+          Run number: {results['github_run_number']}
+          Actor: {results['github_actor']}
+          Started at: {results['started_at']}
+          Finished at: {results['finished_at']}
+
+          Load time: {results['load_seconds']} s
+          Warmup: {results['warmup_tokens']} tokens in {results['warmup_seconds']} s
+          Benchmark: {results['requested_output_tokens']} requested tokens in {results['generation_seconds']} s
+          Throughput: {results['tokens_per_second_requested']} requested tokens/s
+
+          Prompt:
+          {results['prompt']}
+
+          Generated text:
+          {results['generated_text']}
+
+          macOS version:
+          {results['macos_version']}
+
+          MLX default device:
+          {results['metal_device_probe']}
+          """
+          result_path.write_text(text, encoding="utf-8")
+          print(text)
+          PY
+
+          python benchmark_qwen_mlx.py
+
+      - name: Commit benchmark results back to repo
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add action-output.txt
-          git commit -m "Write GitHub Actions output file" || echo "No changes to commit"
-          git push
+          git add mlx-qwen25-05b-benchmark-results.txt mlx-qwen25-05b-benchmark-results.json || true
+          git commit -m "Write MLX Qwen benchmark results" || echo "No benchmark result changes to commit"
+          git push || echo "No benchmark results pushed"
