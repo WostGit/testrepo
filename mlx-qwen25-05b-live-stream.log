@@ -30,3 +30,4 @@ case prompt=short max_tokens=64 repeat=3/3 seconds=1.6357 requested_tps=39.1272 
 case prompt=short max_tokens=128 repeat=1/3 seconds=2.7599 requested_tps=46.3791 output_tokens_encoded=128
 case prompt=short max_tokens=128 repeat=2/3 seconds=2.7406 requested_tps=46.7058 output_tokens_encoded=128
 case prompt=short max_tokens=128 repeat=3/3 seconds=3.0948 requested_tps=41.3592 output_tokens_encoded=128
+case prompt=short max_tokens=256 repeat=1/3 seconds=5.0801 requested_tps=50.3925 output_tokens_encoded=256
