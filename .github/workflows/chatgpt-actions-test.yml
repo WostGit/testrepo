@@ -6,16 +6,35 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-      - name: Run test command
+      - name: Create output file
         run: |
-          echo "GitHub Actions test file is running successfully."
-          echo "Repository: $GITHUB_REPOSITORY"
-          echo "Commit: $GITHUB_SHA"
+          cat > action-output.txt <<EOF
+          GitHub Actions test file ran successfully.
+          Repository: $GITHUB_REPOSITORY
+          Commit: $GITHUB_SHA
+          Run ID: $GITHUB_RUN_ID
+          Run number: $GITHUB_RUN_NUMBER
+          Actor: $GITHUB_ACTOR
+          EOF
+          cat action-output.txt
           test -f chatgpt-test-file.txt
+
+      - name: Commit output file back to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add action-output.txt
+          git commit -m "Write GitHub Actions output file" || echo "No changes to commit"
+          git push
