@@ -1,4 +1,4 @@
-name: Test Jackrong Qwopus3.5 quantized MLX
+name: Test Jackrong Qwopus3.5 9B 4bit MLX memory
 
 on:
   push:
@@ -10,9 +10,9 @@ permissions:
   contents: write
 
 jobs:
-  test-qwopus-mlx:
+  test-qwopus-mlx-memory:
     runs-on: macos-26
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -27,29 +27,113 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --upgrade mlx mlx-lm huggingface_hub
+          python -m pip install --upgrade mlx mlx-lm huggingface_hub psutil
 
-      - name: Test quantized Jackrong Qwopus3.5 with MLX
+      - name: Test 5.04GB quantized Qwopus MLX with ultra verbose memory logging
         run: |
           set +e
-          cat > test_jackrong_qwopus35_quant_mlx.py <<'PY'
+          cat > test_qwopus35_9b_4bit_memory.py <<'PY'
           import inspect
           import json
           import os
           import platform
+          import resource
           import signal
           import subprocess
+          import sys
+          import threading
           import time
           import traceback
           from pathlib import Path
 
+          import psutil
           from huggingface_hub import HfApi
 
           MODEL_ID = 'Jackrong/MLX-Qwopus3.5-9B-v3-4bit'
-          ORIGINAL_MODEL_ID = 'Jackrong/Qwopus3.5-4B-v3'
-          RESULT_MD = Path('jackrong-qwopus35-quant-mlx-test-results.md')
-          RESULT_JSON = Path('jackrong-qwopus35-quant-mlx-test-results.json')
-          LOG = Path('jackrong-qwopus35-quant-mlx-test.log')
+          RESULT_MD = Path('qwopus35-9b-4bit-mlx-memory-results.md')
+          RESULT_JSON = Path('qwopus35-9b-4bit-mlx-memory-results.json')
+          LOG = Path('qwopus35-9b-4bit-mlx-memory.log')
+          SAMPLES_JSONL = Path('qwopus35-9b-4bit-mlx-memory-samples.jsonl')
+
+          process = psutil.Process(os.getpid())
+          samples = []
+          monitor_stop = threading.Event()
+
+          def sh(args):
+              try:
+                  return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT).strip()
+              except Exception as exc:
+                  return f'unavailable: {exc}'
+
+          def parse_vm_stat(text):
+              page_size = 16384
+              out = {'raw': text}
+              for line in text.splitlines():
+                  if 'page size of' in line:
+                      try:
+                          page_size = int(line.split('page size of')[1].split('bytes')[0].strip())
+                      except Exception:
+                          pass
+                  if ':' not in line:
+                      continue
+                  key, val = line.split(':', 1)
+                  key = key.strip().lower().replace(' ', '_').replace('"', '')
+                  digits = ''.join(ch for ch in val if ch.isdigit())
+                  if digits:
+                      out[key] = int(digits)
+              out['page_size'] = page_size
+              for key in list(out.keys()):
+                  if key not in {'raw', 'page_size'} and isinstance(out[key], int):
+                      out[key + '_bytes'] = out[key] * page_size
+              return out
+
+          def collect_memory(label):
+              vm_text = sh(['vm_stat'])
+              vm = parse_vm_stat(vm_text)
+              vm_pressure = sh(['memory_pressure'])
+              df = sh(['df', '-h', '.'])
+              du_hf = sh(['bash', '-lc', 'du -sh ~/.cache/huggingface 2>/dev/null || true'])
+              rss = process.memory_info().rss
+              vms = process.memory_info().vms
+              ru = resource.getrusage(resource.RUSAGE_SELF)
+              sample = {
+                  't': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                  'elapsed_since_start_s': round(time.perf_counter() - START_MONO, 4),
+                  'label': label,
+                  'pid': os.getpid(),
+                  'rss_bytes': rss,
+                  'rss_gib': round(rss / (1024**3), 4),
+                  'vms_bytes': vms,
+                  'vms_gib': round(vms / (1024**3), 4),
+                  'ru_maxrss_kb_or_bytes': ru.ru_maxrss,
+                  'cpu_percent_instant': process.cpu_percent(interval=None),
+                  'num_threads': process.num_threads(),
+                  'system_virtual_memory': psutil.virtual_memory()._asdict(),
+                  'swap_memory': psutil.swap_memory()._asdict(),
+                  'vm_stat': vm,
+                  'memory_pressure': vm_pressure,
+                  'df_h': df,
+                  'du_huggingface': du_hf,
+              }
+              samples.append(sample)
+              with SAMPLES_JSONL.open('a', encoding='utf-8') as f:
+                  f.write(json.dumps(sample) + '\n')
+              log_line = (
+                  f"MEM {sample['t']} label={label} rss_gib={sample['rss_gib']} vms_gib={sample['vms_gib']} "
+                  f"sys_available_gib={round(sample['system_virtual_memory']['available']/(1024**3),4)} "
+                  f"sys_used_gib={round(sample['system_virtual_memory']['used']/(1024**3),4)} "
+                  f"sys_percent={sample['system_virtual_memory']['percent']} swap_used_gib={round(sample['swap_memory']['used']/(1024**3),4)}"
+              )
+              log(log_line)
+              return sample
+
+          def monitor_loop():
+              while not monitor_stop.is_set():
+                  try:
+                      collect_memory('background_monitor')
+                  except Exception as exc:
+                      log(f'background_monitor_error={exc!r}')
+                  monitor_stop.wait(5)
 
           def log(msg):
               text = str(msg)
@@ -57,41 +141,33 @@ jobs:
               with LOG.open('a', encoding='utf-8') as f:
                   f.write(text + '\n')
 
-          def cmd(args):
-              try:
-                  return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT).strip()
-              except Exception as exc:
-                  return f'unavailable: {exc}'
-
-          def file_summary(info):
-              rows = []
-              total = 0
-              for s in getattr(info, 'siblings', []) or []:
-                  name = getattr(s, 'rfilename', '') or ''
-                  size = getattr(s, 'size', None) or 0
-                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf')) or 'model' in name.lower() or name in {'config.json', 'tokenizer.json'}:
-                      rows.append({'name': name, 'size': int(size or 0)})
-                      total += int(size or 0)
-              rows.sort(key=lambda r: r['name'])
-              return total, rows
-
           def save_result(result, status=None):
               if status:
                   result['status'] = status
               result['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+              result['memory_sample_count'] = len(samples)
+              if samples:
+                  peak = max(samples, key=lambda s: s.get('rss_bytes', 0))
+                  result['peak_process_rss_gib'] = peak.get('rss_gib')
+                  result['peak_process_rss_label'] = peak.get('label')
+                  min_avail = min(samples, key=lambda s: s.get('system_virtual_memory', {}).get('available', 10**30))
+                  result['min_system_available_gib'] = round(min_avail['system_virtual_memory']['available']/(1024**3), 4)
+                  result['min_system_available_label'] = min_avail.get('label')
               RESULT_JSON.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
               lines = [
-                  '# Jackrong Qwopus3.5 quantized MLX test results',
+                  '# Qwopus3.5 9B 4-bit MLX memory test',
                   '',
                   f"Status: `{result.get('status')}`",
-                  f"Quantized MLX model: `{MODEL_ID}`",
-                  f"Original failed BF16/F32 model attempted earlier: `{ORIGINAL_MODEL_ID}`",
+                  f"Model: `{MODEL_ID}`",
                   f"Model URL: <https://huggingface.co/{MODEL_ID}>",
                   f"Started: `{result.get('started_at')}`",
                   f"Updated: `{result.get('updated_at')}`",
                   f"Runner: `{result.get('runner')} {result.get('runner_os')} {result.get('runner_arch')}`",
                   f"Platform: `{result.get('platform')}`",
                   f"GitHub SHA: `{result.get('github_sha')}`",
+                  f"Peak process RSS GiB: `{result.get('peak_process_rss_gib')}` at `{result.get('peak_process_rss_label')}`",
+                  f"Min system available GiB: `{result.get('min_system_available_gib')}` at `{result.get('min_system_available_label')}`",
+                  f"Memory sample count: `{result.get('memory_sample_count')}`",
                   '',
               ]
               if result.get('huggingface'):
@@ -100,8 +176,6 @@ jobs:
                       '## Hugging Face metadata',
                       f"Model ID: `{hf.get('model_id')}`",
                       f"Revision SHA: `{hf.get('sha')}`",
-                      f"Library: `{hf.get('library_name')}`",
-                      f"Pipeline: `{hf.get('pipeline_tag')}`",
                       f"Tags: `{hf.get('tags')}`",
                       f"Approx selected file bytes: `{hf.get('model_file_bytes_selected')}`",
                       '',
@@ -117,14 +191,26 @@ jobs:
               if result.get('tests'):
                   lines += ['## Generation tests', '| Test | OK | Max tokens | Seconds | Requested tok/s | Output tokens |', '|---|---:|---:|---:|---:|---:|']
                   for t in result['tests']:
-                      lines.append(f"| {t['name']} | {t['ok']} | {t['max_tokens']} | {t['elapsed_seconds']} | {t['requested_tokens_per_second']} | {t['output_tokens_encoded']} |")
+                      lines.append(f"| {t['name']} | {t.get('ok')} | {t.get('max_tokens')} | {t.get('elapsed_seconds')} | {t.get('requested_tokens_per_second')} | {t.get('output_tokens_encoded')} |")
                   lines.append('')
                   for t in result['tests']:
-                      lines += [f"### {t['name']} output", '```text', t.get('output_preview', ''), '```', '']
+                      lines += [f"### {t['name']} output", '```text', str(t.get('output_preview', '')), '```', '']
               if result.get('error'):
                   lines += ['## Error', f"`{result['error']}`", '', '```text', result.get('traceback', ''), '```', '']
-              lines += ['See JSON and log files for full details.']
+              lines += ['## Memory artifacts', '', '- `qwopus35-9b-4bit-mlx-memory.log`', '- `qwopus35-9b-4bit-mlx-memory-samples.jsonl`', '- `qwopus35-9b-4bit-mlx-memory-results.json`']
               RESULT_MD.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          def file_summary(info):
+              rows = []
+              total = 0
+              for s in getattr(info, 'siblings', []) or []:
+                  name = getattr(s, 'rfilename', '') or ''
+                  size = getattr(s, 'size', None) or 0
+                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf')) or 'model' in name.lower() or name in {'config.json', 'tokenizer.json'}:
+                      rows.append({'name': name, 'size': int(size or 0)})
+                      total += int(size or 0)
+              rows.sort(key=lambda r: r['name'])
+              return total, rows
 
           class TimeoutErrorForSmokeTest(Exception):
               pass
@@ -132,12 +218,13 @@ jobs:
           def alarm_handler(signum, frame):
               raise TimeoutErrorForSmokeTest('generation smoke test timed out')
 
-          started = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+          START_MONO = time.perf_counter()
           LOG.write_text('', encoding='utf-8')
+          SAMPLES_JSONL.write_text('', encoding='utf-8')
+          started = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
           result = {
               'status': 'started',
               'model_id': MODEL_ID,
-              'original_attempted_model_id': ORIGINAL_MODEL_ID,
               'model_url': 'https://huggingface.co/' + MODEL_ID,
               'started_at': started,
               'github_sha': os.environ.get('GITHUB_SHA'),
@@ -147,18 +234,24 @@ jobs:
               'runner_os': os.environ.get('RUNNER_OS'),
               'runner_arch': os.environ.get('RUNNER_ARCH'),
               'platform': platform.platform(),
-              'macos_version': cmd(['sw_vers']),
+              'python_version': sys.version.replace('\n', ' '),
+              'macos_version': sh(['sw_vers']),
+              'sysctl_hw': sh(['bash', '-lc', 'sysctl -n hw.memsize hw.ncpu hw.optional.arm64 2>/dev/null || true']),
           }
           save_result(result)
+          monitor = threading.Thread(target=monitor_loop, daemon=True)
+          monitor.start()
 
           try:
-              log(f'Testing quantized MLX Hugging Face model: {MODEL_ID}')
-              log(f'Original BF16/F32 model from failed run: {ORIGINAL_MODEL_ID}')
+              log(f'Testing 5.04GB quantized MLX model on 7GB GitHub M1 runner: {MODEL_ID}')
               log(f"GitHub SHA: {result['github_sha']}")
               log(f"Runner: {result['runner']} {result['runner_os']} {result['runner_arch']}")
               log('macOS: ' + result['macos_version'].replace('\n', ' | '))
+              log('sysctl_hw: ' + str(result['sysctl_hw']).replace('\n', ' | '))
+              collect_memory('initial')
 
               api = HfApi()
+              collect_memory('before_hf_model_info')
               info = api.model_info(MODEL_ID, files_metadata=True)
               total_size, files = file_summary(info)
               result['huggingface'] = {
@@ -169,15 +262,19 @@ jobs:
                   'pipeline_tag': getattr(info, 'pipeline_tag', None),
                   'library_name': getattr(info, 'library_name', None),
                   'model_file_bytes_selected': total_size,
+                  'model_file_gib_selected': round(total_size/(1024**3), 4),
                   'files': files[:80],
               }
               log(f'Hugging Face metadata loaded: model_id={info.modelId}')
               log(f"Tags: {result['huggingface']['tags']}")
-              log(f'Approx selected model/config/tokenizer bytes: {total_size}')
+              log(f"Approx selected model/config/tokenizer bytes: {total_size} ({round(total_size/(1024**3),4)} GiB)")
+              collect_memory('after_hf_model_info')
               save_result(result, 'metadata_loaded')
 
+              collect_memory('before_import_mlx')
               import mlx.core as mx
               from mlx_lm import generate, load
+              collect_memory('after_import_mlx')
 
               result['mlx_default_device_before_load'] = str(mx.default_device())
               log(f"MLX default device before load: {result['mlx_default_device_before_load']}")
@@ -190,9 +287,12 @@ jobs:
               except Exception as exc:
                   log(f'Could not inspect mlx_lm.load signature: {exc}')
 
+              collect_memory('before_mlx_load_download_and_map')
               load_start = time.perf_counter()
               model, tokenizer = load(MODEL_ID, **load_kwargs)
+              collect_memory('after_mlx_load_before_eval')
               mx.eval(model.parameters())
+              collect_memory('after_mx_eval_parameters')
               load_seconds = time.perf_counter() - load_start
               result['load_seconds'] = round(load_seconds, 4)
               result['mlx_default_device_after_load'] = str(mx.default_device())
@@ -202,18 +302,21 @@ jobs:
               signal.signal(signal.SIGALRM, alarm_handler)
               tests = []
               for name, prompt, max_tokens, timeout_s in [
-                  ('one_token_smoke', 'Hi.', 1, 45),
-                  ('short_smoke', 'Say OK in one sentence.', 8, 60),
+                  ('one_token_smoke', 'Hi.', 1, 60),
+                  ('two_token_smoke', 'OK', 2, 60),
+                  ('eight_token_smoke', 'Say OK in one short sentence.', 8, 90),
               ]:
                   test = {'name': name, 'prompt': prompt, 'max_tokens': max_tokens, 'status': 'started'}
                   result['tests'] = tests + [test]
                   save_result(result, f'{name}_started')
+                  collect_memory(f'before_generation_{name}')
                   try:
                       signal.alarm(timeout_s)
                       t0 = time.perf_counter()
                       output = generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
                       elapsed = time.perf_counter() - t0
                       signal.alarm(0)
+                      collect_memory(f'after_generation_{name}')
                       try:
                           out_tokens = len(tokenizer.encode(output))
                       except Exception:
@@ -229,6 +332,7 @@ jobs:
                       log(f"{name}: passed seconds={elapsed:.4f} requested_tps={test['requested_tokens_per_second']} output={str(output)[:160]}")
                   except Exception as exc:
                       signal.alarm(0)
+                      collect_memory(f'after_generation_error_{name}')
                       test.update({'status': 'error', 'ok': False, 'error': repr(exc), 'traceback': traceback.format_exc()})
                       log(f'{name}: failed {repr(exc)}')
                       log(traceback.format_exc())
@@ -237,30 +341,40 @@ jobs:
                   save_result(result)
 
               result['status'] = 'passed' if all(t.get('ok') for t in tests) else 'partial_or_failed'
+              collect_memory('final_before_save')
               save_result(result)
 
-          except Exception as exc:
-              result['status'] = 'error'
+          except BaseException as exc:
+              result['status'] = 'error_or_interrupted'
               result['error'] = repr(exc)
               result['traceback'] = traceback.format_exc()
-              log('ERROR: ' + repr(exc))
+              log('ERROR_OR_INTERRUPTED: ' + repr(exc))
               log(result['traceback'])
+              try:
+                  collect_memory('exception_handler')
+              except Exception:
+                  pass
               save_result(result)
           finally:
+              monitor_stop.set()
               result['finished_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+              try:
+                  collect_memory('finally')
+              except Exception:
+                  pass
               save_result(result)
               log('Wrote result files')
           PY
-          PYTHONUNBUFFERED=1 python test_jackrong_qwopus35_quant_mlx.py
-          echo "python_exit=$?" | tee -a jackrong-qwopus35-quant-mlx-test.log
+          PYTHONUNBUFFERED=1 python test_qwopus35_9b_4bit_memory.py
+          echo "python_exit=$?" | tee -a qwopus35-9b-4bit-mlx-memory.log
           exit 0
 
-      - name: Commit test results back to branch
+      - name: Commit memory test results back to branch
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add jackrong-qwopus35-quant-mlx-test-results.md jackrong-qwopus35-quant-mlx-test-results.json jackrong-qwopus35-quant-mlx-test.log || true
-          git commit -m "Write quantized Jackrong Qwopus3.5 MLX test results [skip ci]" || echo "No result changes to commit"
+          git add qwopus35-9b-4bit-mlx-memory-results.md qwopus35-9b-4bit-mlx-memory-results.json qwopus35-9b-4bit-mlx-memory.log qwopus35-9b-4bit-mlx-memory-samples.jsonl || true
+          git commit -m "Write Qwopus3.5 9B 4bit MLX memory test results [skip ci]" || echo "No memory result changes to commit"
           git pull --rebase || true
-          git push || echo "No result push performed"
+          git push || echo "No memory result push performed"
