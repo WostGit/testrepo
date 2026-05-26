@@ -5,3 +5,4 @@ Trigger after workflow update: 2026-05-26T09:05:00Z
 Trigger MLX benchmark workflow: 2026-05-26T09:16:00Z
 MLX benchmark trigger 2: 2026-05-26T09:30:00Z
 Extended sweep trigger: 2026-05-26T09:42:00Z
+Benchmark sweep trigger 4: 2026-05-26T09:55:00Z
