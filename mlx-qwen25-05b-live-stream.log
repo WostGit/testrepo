@@ -20,3 +20,4 @@ case prompt=tiny max_tokens=128 repeat=3/3 seconds=3.3502 requested_tps=38.2072 
 case prompt=tiny max_tokens=256 repeat=1/3 seconds=5.8720 requested_tps=43.5967 output_tokens_encoded=256
 case prompt=tiny max_tokens=256 repeat=2/3 seconds=5.2751 requested_tps=48.5300 output_tokens_encoded=256
 case prompt=tiny max_tokens=256 repeat=3/3 seconds=5.4488 requested_tps=46.9826 output_tokens_encoded=256
+case prompt=tiny max_tokens=512 repeat=1/3 seconds=11.5904 requested_tps=44.1745 output_tokens_encoded=512
