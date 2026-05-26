@@ -1,2 +1,9 @@
 Qwen2.5 0.5B MLX live stream benchmark
 started_at=2026-05-26T09:23:36Z
+repo=WostGit/testrepo
+sha=047ebeb1c105a9b89436ad1e2518b9ffdefa8bed
+run_id=26443836976
+run_number=1
+runner=GitHub Actions 1000004747 macOS ARM64
+platform=macOS-26.4-arm64-arm-64bit
+sw_vers=ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
