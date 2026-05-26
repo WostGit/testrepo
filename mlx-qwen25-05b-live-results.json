@@ -2,16 +2,16 @@
   "status": "running",
   "best_case_so_far": {
     "prompt": "tiny",
-    "max_tokens": 64,
-    "avg_tps": 38.027,
-    "best_tps": 43.2145,
-    "median_tps": 35.6851,
+    "max_tokens": 256,
+    "avg_tps": 46.3698,
+    "best_tps": 48.53,
+    "median_tps": 46.9826,
     "seconds": [
-      1.7935,
-      1.8191,
-      1.481
+      5.872,
+      5.2751,
+      5.4488
     ]
   },
-  "cases_completed": 2,
-  "updated_at": "2026-05-26T09:29:12Z"
+  "cases_completed": 3,
+  "updated_at": "2026-05-26T09:29:34Z"
 }
