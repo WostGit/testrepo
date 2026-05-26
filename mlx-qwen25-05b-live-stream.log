@@ -27,3 +27,4 @@ prompt_start name=short prompt_tokens=13
 case prompt=short max_tokens=64 repeat=1/3 seconds=1.7408 requested_tps=36.7643 output_tokens_encoded=64
 case prompt=short max_tokens=64 repeat=2/3 seconds=1.5256 requested_tps=41.9507 output_tokens_encoded=64
 case prompt=short max_tokens=64 repeat=3/3 seconds=1.6357 requested_tps=39.1272 output_tokens_encoded=64
+case prompt=short max_tokens=128 repeat=1/3 seconds=2.7599 requested_tps=46.3791 output_tokens_encoded=128
