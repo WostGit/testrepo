@@ -49,3 +49,5 @@ case prompt=long max_tokens=256 repeat=3/3 seconds=4.8664 requested_tps=52.6058 
 case prompt=long max_tokens=512 repeat=1/3 seconds=9.8393 requested_tps=52.0364 output_tokens_encoded=512
 case prompt=long max_tokens=512 repeat=2/3 seconds=12.2573 requested_tps=41.7711 output_tokens_encoded=512
 case prompt=long max_tokens=512 repeat=3/3 seconds=11.0171 requested_tps=46.4730 output_tokens_encoded=512
+finished_at=2026-05-26T09:33:00Z
+overall_best_tps=53.2223

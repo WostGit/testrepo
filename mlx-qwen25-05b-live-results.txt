@@ -1,18 +1,40 @@
-Qwen live benchmark running
+Qwen2.5 0.5B MLX Live Stream Benchmark Results
+================================================
+Model: Qwen/Qwen2.5-0.5B-Instruct
+Run ID: 26443882250
+Run number: 2
+Commit: b43a24a43111355ce0a713260c03eae71943114a
+Started: 2026-05-26T09:28:30Z
+Finished: 2026-05-26T09:33:00Z
+Load seconds: 6.0174
+Warmup seconds: 2.0551
+Overall best requested tokens/s: 53.2223
+Overall average requested tokens/s: 44.9356
+
+Best case:
 {
-  "status": "running",
-  "best_case_so_far": {
-    "prompt": "short",
-    "max_tokens": 512,
-    "avg_tps": 49.7623,
-    "best_tps": 53.2223,
-    "median_tps": 49.7952,
-    "seconds": [
-      11.0656,
-      10.2821,
-      9.62
-    ]
-  },
-  "cases_completed": 12,
-  "updated_at": "2026-05-26T09:32:58Z"
+  "prompt": "short",
+  "max_tokens": 512,
+  "avg_tps": 49.7623,
+  "best_tps": 53.2223,
+  "median_tps": 49.7952,
+  "seconds": [
+    11.0656,
+    10.2821,
+    9.62
+  ]
 }
+
+Cases:
+tiny,64,avg=38.027,best=43.2145,median=35.6851,seconds=[1.7935, 1.8191, 1.481]
+tiny,128,avg=37.4577,best=38.6605,median=38.2072,seconds=[3.3109, 3.6051, 3.3502]
+tiny,256,avg=46.3698,best=48.53,median=46.9826,seconds=[5.872, 5.2751, 5.4488]
+tiny,512,avg=46.2815,best=49.6028,median=45.0673,seconds=[11.5904, 11.3608, 10.322]
+short,64,avg=39.2807,best=41.9507,median=39.1272,seconds=[1.7408, 1.5256, 1.6357]
+short,128,avg=44.8147,best=46.7058,median=46.3791,seconds=[2.7599, 2.7406, 3.0948]
+short,256,avg=49.5215,best=50.3925,median=49.8276,seconds=[5.0801, 5.1377, 5.2953]
+short,512,avg=49.7623,best=53.2223,median=49.7952,seconds=[11.0656, 10.2821, 9.62]
+long,64,avg=42.4243,best=45.7439,median=43.1344,seconds=[1.6669, 1.4837, 1.3991]
+long,128,avg=46.8386,best=47.4092,median=46.943,seconds=[2.7267, 2.6999, 2.7727]
+long,256,avg=51.6889,best=52.6058,median=52.1073,seconds=[4.9129, 5.0841, 4.8664]
+long,512,avg=46.7602,best=52.0364,median=46.473,seconds=[9.8393, 12.2573, 11.0171]
