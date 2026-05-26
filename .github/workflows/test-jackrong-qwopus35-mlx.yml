@@ -1,4 +1,4 @@
-name: Test Jackrong Qwopus3.5 4B v3 MLX
+name: Test Jackrong Qwopus3.5 quantized MLX
 
 on:
   push:
@@ -29,10 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade mlx mlx-lm huggingface_hub
 
-      - name: Test Jackrong Qwopus3.5 4B v3 with MLX
+      - name: Test quantized Jackrong Qwopus3.5 with MLX
         run: |
           set +e
-          cat > test_jackrong_qwopus35_mlx.py <<'PY'
+          cat > test_jackrong_qwopus35_quant_mlx.py <<'PY'
           import inspect
           import json
           import os
@@ -45,10 +45,11 @@ jobs:
 
           from huggingface_hub import HfApi
 
-          MODEL_ID = 'Jackrong/Qwopus3.5-4B-v3'
-          RESULT_MD = Path('jackrong-qwopus35-4b-v3-mlx-test-results.md')
-          RESULT_JSON = Path('jackrong-qwopus35-4b-v3-mlx-test-results.json')
-          LOG = Path('jackrong-qwopus35-4b-v3-mlx-test.log')
+          MODEL_ID = 'Jackrong/MLX-Qwopus3.5-9B-v3-4bit'
+          ORIGINAL_MODEL_ID = 'Jackrong/Qwopus3.5-4B-v3'
+          RESULT_MD = Path('jackrong-qwopus35-quant-mlx-test-results.md')
+          RESULT_JSON = Path('jackrong-qwopus35-quant-mlx-test-results.json')
+          LOG = Path('jackrong-qwopus35-quant-mlx-test.log')
 
           def log(msg):
               text = str(msg)
@@ -62,16 +63,29 @@ jobs:
               except Exception as exc:
                   return f'unavailable: {exc}'
 
+          def file_summary(info):
+              rows = []
+              total = 0
+              for s in getattr(info, 'siblings', []) or []:
+                  name = getattr(s, 'rfilename', '') or ''
+                  size = getattr(s, 'size', None) or 0
+                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf')) or 'model' in name.lower() or name in {'config.json', 'tokenizer.json'}:
+                      rows.append({'name': name, 'size': int(size or 0)})
+                      total += int(size or 0)
+              rows.sort(key=lambda r: r['name'])
+              return total, rows
+
           def save_result(result, status=None):
               if status:
                   result['status'] = status
               result['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
               RESULT_JSON.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
               lines = [
-                  '# Jackrong/Qwopus3.5-4B-v3 MLX test results',
+                  '# Jackrong Qwopus3.5 quantized MLX test results',
                   '',
                   f"Status: `{result.get('status')}`",
-                  f"Model: `{MODEL_ID}`",
+                  f"Quantized MLX model: `{MODEL_ID}`",
+                  f"Original failed BF16/F32 model attempted earlier: `{ORIGINAL_MODEL_ID}`",
                   f"Model URL: <https://huggingface.co/{MODEL_ID}>",
                   f"Started: `{result.get('started_at')}`",
                   f"Updated: `{result.get('updated_at')}`",
@@ -100,36 +114,17 @@ jobs:
                       f"Device after load: `{result.get('mlx_default_device_after_load')}`",
                       '',
                   ]
-              if result.get('generation_attempt'):
-                  g = result['generation_attempt']
-                  lines += [
-                      '## Generation attempt',
-                      f"Status: `{g.get('status')}`",
-                      f"Max tokens: `{g.get('max_tokens')}`",
-                      f"Elapsed seconds: `{g.get('elapsed_seconds')}`",
-                      f"Requested tok/s: `{g.get('requested_tokens_per_second')}`",
-                      '',
-                  ]
-                  if g.get('output_preview'):
-                      lines += ['```text', g['output_preview'], '```', '']
-                  if g.get('error'):
-                      lines += ['Error:', f"`{g.get('error')}`", '']
+              if result.get('tests'):
+                  lines += ['## Generation tests', '| Test | OK | Max tokens | Seconds | Requested tok/s | Output tokens |', '|---|---:|---:|---:|---:|---:|']
+                  for t in result['tests']:
+                      lines.append(f"| {t['name']} | {t['ok']} | {t['max_tokens']} | {t['elapsed_seconds']} | {t['requested_tokens_per_second']} | {t['output_tokens_encoded']} |")
+                  lines.append('')
+                  for t in result['tests']:
+                      lines += [f"### {t['name']} output", '```text', t.get('output_preview', ''), '```', '']
               if result.get('error'):
                   lines += ['## Error', f"`{result['error']}`", '', '```text', result.get('traceback', ''), '```', '']
               lines += ['See JSON and log files for full details.']
               RESULT_MD.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-
-          def file_summary(info):
-              rows = []
-              total = 0
-              for s in getattr(info, 'siblings', []) or []:
-                  name = getattr(s, 'rfilename', '') or ''
-                  size = getattr(s, 'size', None) or 0
-                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf')) or 'model' in name.lower() or name in {'config.json', 'tokenizer.json'}:
-                      rows.append({'name': name, 'size': int(size or 0)})
-                      total += int(size or 0)
-              rows.sort(key=lambda r: r['name'])
-              return total, rows
 
           class TimeoutErrorForSmokeTest(Exception):
               pass
@@ -142,6 +137,7 @@ jobs:
           result = {
               'status': 'started',
               'model_id': MODEL_ID,
+              'original_attempted_model_id': ORIGINAL_MODEL_ID,
               'model_url': 'https://huggingface.co/' + MODEL_ID,
               'started_at': started,
               'github_sha': os.environ.get('GITHUB_SHA'),
@@ -156,7 +152,8 @@ jobs:
           save_result(result)
 
           try:
-              log(f'Testing exact Hugging Face model: {MODEL_ID}')
+              log(f'Testing quantized MLX Hugging Face model: {MODEL_ID}')
+              log(f'Original BF16/F32 model from failed run: {ORIGINAL_MODEL_ID}')
               log(f"GitHub SHA: {result['github_sha']}")
               log(f"Runner: {result['runner']} {result['runner_os']} {result['runner_arch']}")
               log('macOS: ' + result['macos_version'].replace('\n', ' | '))
@@ -184,7 +181,6 @@ jobs:
 
               result['mlx_default_device_before_load'] = str(mx.default_device())
               log(f"MLX default device before load: {result['mlx_default_device_before_load']}")
-
               load_kwargs = {}
               try:
                   sig = inspect.signature(load)
@@ -203,33 +199,44 @@ jobs:
               log(f'Loaded model in {load_seconds:.4f}s on {mx.default_device()}')
               save_result(result, 'loaded')
 
-              # The previous run was killed with exit 143 immediately after load during generation.
-              # Keep the smoke test tiny and bounded so we can confirm whether generation is viable.
-              prompt = 'Hi.'
-              max_tokens = 1
-              result['generation_attempt'] = {'status': 'started', 'prompt': prompt, 'max_tokens': max_tokens}
-              save_result(result, 'generation_started')
               signal.signal(signal.SIGALRM, alarm_handler)
-              signal.alarm(45)
-              try:
-                  t0 = time.perf_counter()
-                  output = generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
-                  elapsed = time.perf_counter() - t0
-                  signal.alarm(0)
-                  result['generation_attempt'].update({
-                      'status': 'passed',
-                      'elapsed_seconds': round(elapsed, 4),
-                      'requested_tokens_per_second': round(max_tokens / elapsed, 4) if elapsed > 0 else None,
-                      'output_preview': str(output)[:500],
-                  })
-                  result['status'] = 'passed'
-                  log(f'generation_smoke: passed seconds={elapsed:.4f} output={str(output)[:120]}')
-              except Exception as exc:
-                  signal.alarm(0)
-                  result['generation_attempt'].update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
-                  result['status'] = 'loaded_generation_failed'
-                  log('Generation smoke failed: ' + repr(exc))
-                  log(traceback.format_exc())
+              tests = []
+              for name, prompt, max_tokens, timeout_s in [
+                  ('one_token_smoke', 'Hi.', 1, 45),
+                  ('short_smoke', 'Say OK in one sentence.', 8, 60),
+              ]:
+                  test = {'name': name, 'prompt': prompt, 'max_tokens': max_tokens, 'status': 'started'}
+                  result['tests'] = tests + [test]
+                  save_result(result, f'{name}_started')
+                  try:
+                      signal.alarm(timeout_s)
+                      t0 = time.perf_counter()
+                      output = generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
+                      elapsed = time.perf_counter() - t0
+                      signal.alarm(0)
+                      try:
+                          out_tokens = len(tokenizer.encode(output))
+                      except Exception:
+                          out_tokens = None
+                      test.update({
+                          'status': 'passed',
+                          'ok': bool(output and str(output).strip()),
+                          'elapsed_seconds': round(elapsed, 4),
+                          'requested_tokens_per_second': round(max_tokens / elapsed, 4) if elapsed > 0 else None,
+                          'output_tokens_encoded': out_tokens,
+                          'output_preview': str(output)[:800],
+                      })
+                      log(f"{name}: passed seconds={elapsed:.4f} requested_tps={test['requested_tokens_per_second']} output={str(output)[:160]}")
+                  except Exception as exc:
+                      signal.alarm(0)
+                      test.update({'status': 'error', 'ok': False, 'error': repr(exc), 'traceback': traceback.format_exc()})
+                      log(f'{name}: failed {repr(exc)}')
+                      log(traceback.format_exc())
+                  tests.append(test)
+                  result['tests'] = tests
+                  save_result(result)
+
+              result['status'] = 'passed' if all(t.get('ok') for t in tests) else 'partial_or_failed'
               save_result(result)
 
           except Exception as exc:
@@ -244,8 +251,8 @@ jobs:
               save_result(result)
               log('Wrote result files')
           PY
-          PYTHONUNBUFFERED=1 python test_jackrong_qwopus35_mlx.py
-          echo "python_exit=$?" | tee -a jackrong-qwopus35-4b-v3-mlx-test.log
+          PYTHONUNBUFFERED=1 python test_jackrong_qwopus35_quant_mlx.py
+          echo "python_exit=$?" | tee -a jackrong-qwopus35-quant-mlx-test.log
           exit 0
 
       - name: Commit test results back to branch
@@ -253,7 +260,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add jackrong-qwopus35-4b-v3-mlx-test-results.md jackrong-qwopus35-4b-v3-mlx-test-results.json jackrong-qwopus35-4b-v3-mlx-test.log || true
-          git commit -m "Write Jackrong Qwopus3.5 4B v3 MLX test results [skip ci]" || echo "No result changes to commit"
+          git add jackrong-qwopus35-quant-mlx-test-results.md jackrong-qwopus35-quant-mlx-test-results.json jackrong-qwopus35-quant-mlx-test.log || true
+          git commit -m "Write quantized Jackrong Qwopus3.5 MLX test results [skip ci]" || echo "No result changes to commit"
           git pull --rebase || true
           git push || echo "No result push performed"
