@@ -1,0 +1,110 @@
+{
+  "status": "passed",
+  "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+  "model_url": "https://huggingface.co/Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+  "started_at": "2026-05-26T10:29:24Z",
+  "github_sha": "13b7895cbad9ca4348d96d8feff91130edf853cd",
+  "github_run_id": "26446907179",
+  "github_run_number": "5",
+  "runner": "GitHub Actions 1000004754",
+  "runner_os": "macOS",
+  "runner_arch": "ARM64",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "python_version": "3.11.9 (v3.11.9:de54cf5be3, Apr  2 2024, 07:12:50) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "macos_version": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4\nBuildVersion:\t\t25E246",
+  "sysctl_hw": "7516192768\n3\n1",
+  "updated_at": "2026-05-26T10:31:50Z",
+  "memory_sample_count": 41,
+  "huggingface": {
+    "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
+    "sha": "7f75eaf78e0da7e23ef84471aaa7331f0d8de6e2",
+    "private": false,
+    "tags": [
+      "mlx",
+      "safetensors",
+      "qwen3_5",
+      "unsloth",
+      "qwen",
+      "qwen3.5",
+      "reasoning",
+      "chain-of-thought",
+      "lora",
+      "competitive-programming",
+      "text-generation",
+      "conversational",
+      "en",
+      "zh",
+      "ko",
+      "base_model:Jackrong/Qwopus3.5-9B-v3",
+      "base_model:adapter:Jackrong/Qwopus3.5-9B-v3",
+      "license:apache-2.0",
+      "4-bit",
+      "region:us"
+    ],
+    "pipeline_tag": "text-generation",
+    "library_name": "mlx",
+    "model_file_bytes_selected": 5058234647,
+    "model_file_gib_selected": 4.7108,
+    "files": [
+      {
+        "name": "config.json",
+        "size": 3157
+      },
+      {
+        "name": "model.safetensors",
+        "size": 5038160953
+      },
+      {
+        "name": "model.safetensors.index.json",
+        "size": 81194
+      },
+      {
+        "name": "tokenizer.json",
+        "size": 19989343
+      }
+    ]
+  },
+  "peak_process_rss_gib": 2.59,
+  "peak_process_rss_label": "background_monitor",
+  "min_system_available_gib": 0.7103,
+  "min_system_available_label": "background_monitor",
+  "mlx_default_device_before_load": "Device(gpu, 0)",
+  "load_seconds": 53.397,
+  "mlx_default_device_after_load": "Device(gpu, 0)",
+  "tests": [
+    {
+      "name": "one_token_smoke",
+      "prompt": "Hi.",
+      "max_tokens": 1,
+      "status": "passed",
+      "ok": true,
+      "elapsed_seconds": 57.3947,
+      "requested_tokens_per_second": 0.0174,
+      "output_tokens_encoded": 1,
+      "output_preview": "I"
+    },
+    {
+      "name": "two_token_smoke",
+      "prompt": "OK",
+      "max_tokens": 2,
+      "status": "passed",
+      "ok": true,
+      "elapsed_seconds": 24.7533,
+      "requested_tokens_per_second": 0.0808,
+      "output_tokens_encoded": 2,
+      "output_preview": ", so"
+    },
+    {
+      "name": "eight_token_smoke",
+      "prompt": "Say OK in one short sentence.",
+      "max_tokens": 8,
+      "status": "passed",
+      "ok": true,
+      "elapsed_seconds": 7.8769,
+      "requested_tokens_per_second": 1.0156,
+      "output_tokens_encoded": 8,
+      "output_preview": "\n\n<think>\nThe user wants me to"
+    }
+  ],
+  "finished_at": "2026-05-26T10:31:50Z"
+}
