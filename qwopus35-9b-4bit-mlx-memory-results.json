@@ -2,19 +2,19 @@
   "status": "passed",
   "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
   "model_url": "https://huggingface.co/Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
-  "started_at": "2026-05-26T10:29:24Z",
-  "github_sha": "13b7895cbad9ca4348d96d8feff91130edf853cd",
-  "github_run_id": "26446907179",
-  "github_run_number": "5",
-  "runner": "GitHub Actions 1000004754",
+  "started_at": "2026-05-26T10:35:56Z",
+  "github_sha": "00e6d60773a16e31ecefe17b8d6f32e501eb245a",
+  "github_run_id": "26447212000",
+  "github_run_number": "6",
+  "runner": "GitHub Actions 1000004755",
   "runner_os": "macOS",
   "runner_arch": "ARM64",
   "platform": "macOS-26.4-arm64-arm-64bit",
   "python_version": "3.11.9 (v3.11.9:de54cf5be3, Apr  2 2024, 07:12:50) [Clang 13.0.0 (clang-1300.0.29.30)]",
   "macos_version": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4\nBuildVersion:\t\t25E246",
   "sysctl_hw": "7516192768\n3\n1",
-  "updated_at": "2026-05-26T10:31:50Z",
-  "memory_sample_count": 41,
+  "updated_at": "2026-05-26T10:37:20Z",
+  "memory_sample_count": 30,
   "huggingface": {
     "model_id": "Jackrong/MLX-Qwopus3.5-9B-v3-4bit",
     "sha": "7f75eaf78e0da7e23ef84471aaa7331f0d8de6e2",
@@ -64,12 +64,12 @@
       }
     ]
   },
-  "peak_process_rss_gib": 2.59,
+  "peak_process_rss_gib": 1.6745,
   "peak_process_rss_label": "background_monitor",
-  "min_system_available_gib": 0.7103,
+  "min_system_available_gib": 0.6789,
   "min_system_available_label": "background_monitor",
   "mlx_default_device_before_load": "Device(gpu, 0)",
-  "load_seconds": 53.397,
+  "load_seconds": 41.9549,
   "mlx_default_device_after_load": "Device(gpu, 0)",
   "tests": [
     {
@@ -78,8 +78,8 @@
       "max_tokens": 1,
       "status": "passed",
       "ok": true,
-      "elapsed_seconds": 57.3947,
-      "requested_tokens_per_second": 0.0174,
+      "elapsed_seconds": 31.4673,
+      "requested_tokens_per_second": 0.0318,
       "output_tokens_encoded": 1,
       "output_preview": "I"
     },
@@ -89,8 +89,8 @@
       "max_tokens": 2,
       "status": "passed",
       "ok": true,
-      "elapsed_seconds": 24.7533,
-      "requested_tokens_per_second": 0.0808,
+      "elapsed_seconds": 3.2225,
+      "requested_tokens_per_second": 0.6206,
       "output_tokens_encoded": 2,
       "output_preview": ", so"
     },
@@ -100,11 +100,11 @@
       "max_tokens": 8,
       "status": "passed",
       "ok": true,
-      "elapsed_seconds": 7.8769,
-      "requested_tokens_per_second": 1.0156,
+      "elapsed_seconds": 4.967,
+      "requested_tokens_per_second": 1.6106,
       "output_tokens_encoded": 8,
       "output_preview": "\n\n<think>\nThe user wants me to"
     }
   ],
-  "finished_at": "2026-05-26T10:31:50Z"
+  "finished_at": "2026-05-26T10:37:20Z"
 }

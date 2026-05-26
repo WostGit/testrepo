@@ -3,14 +3,14 @@
 Status: `passed`
 Model: `Jackrong/MLX-Qwopus3.5-9B-v3-4bit`
 Model URL: <https://huggingface.co/Jackrong/MLX-Qwopus3.5-9B-v3-4bit>
-Started: `2026-05-26T10:29:24Z`
-Updated: `2026-05-26T10:31:50Z`
-Runner: `GitHub Actions 1000004754 macOS ARM64`
+Started: `2026-05-26T10:35:56Z`
+Updated: `2026-05-26T10:37:20Z`
+Runner: `GitHub Actions 1000004755 macOS ARM64`
 Platform: `macOS-26.4-arm64-arm-64bit`
-GitHub SHA: `13b7895cbad9ca4348d96d8feff91130edf853cd`
-Peak process RSS GiB: `2.59` at `background_monitor`
-Min system available GiB: `0.7103` at `background_monitor`
-Memory sample count: `41`
+GitHub SHA: `00e6d60773a16e31ecefe17b8d6f32e501eb245a`
+Peak process RSS GiB: `1.6745` at `background_monitor`
+Min system available GiB: `0.6789` at `background_monitor`
+Memory sample count: `30`
 
 ## Hugging Face metadata
 Model ID: `Jackrong/MLX-Qwopus3.5-9B-v3-4bit`
@@ -19,16 +19,16 @@ Tags: `['mlx', 'safetensors', 'qwen3_5', 'unsloth', 'qwen', 'qwen3.5', 'reasonin
 Approx selected file bytes: `5058234647`
 
 ## MLX load
-Load seconds: `53.397`
+Load seconds: `41.9549`
 Device before load: `Device(gpu, 0)`
 Device after load: `Device(gpu, 0)`
 
 ## Generation tests
 | Test | OK | Max tokens | Seconds | Requested tok/s | Output tokens |
 |---|---:|---:|---:|---:|---:|
-| one_token_smoke | True | 1 | 57.3947 | 0.0174 | 1 |
-| two_token_smoke | True | 2 | 24.7533 | 0.0808 | 2 |
-| eight_token_smoke | True | 8 | 7.8769 | 1.0156 | 8 |
+| one_token_smoke | True | 1 | 31.4673 | 0.0318 | 1 |
+| two_token_smoke | True | 2 | 3.2225 | 0.6206 | 2 |
+| eight_token_smoke | True | 8 | 4.967 | 1.6106 | 8 |
 
 ### one_token_smoke output
 ```text

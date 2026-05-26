@@ -1,60 +1,49 @@
 Testing 5.04GB quantized MLX model on 7GB GitHub M1 runner: Jackrong/MLX-Qwopus3.5-9B-v3-4bit
-GitHub SHA: 13b7895cbad9ca4348d96d8feff91130edf853cd
-Runner: GitHub Actions 1000004754 macOS ARM64
+GitHub SHA: 00e6d60773a16e31ecefe17b8d6f32e501eb245a
+Runner: GitHub Actions 1000004755 macOS ARM64
 macOS: ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
 sysctl_hw: 7516192768 | 3 | 1
-MEM 2026-05-26T10:29:24Z label=initial rss_gib=0.0465 vms_gib=398.5526 sys_available_gib=2.9635 sys_used_gib=3.6494 sys_percent=57.7 swap_used_gib=0.0
-MEM 2026-05-26T10:29:24Z label=background_monitor rss_gib=0.0465 vms_gib=398.5526 sys_available_gib=2.9673 sys_used_gib=3.6483 sys_percent=57.6 swap_used_gib=0.0
-MEM 2026-05-26T10:29:24Z label=before_hf_model_info rss_gib=0.0465 vms_gib=398.5526 sys_available_gib=2.9684 sys_used_gib=3.6486 sys_percent=57.6 swap_used_gib=0.0
+MEM 2026-05-26T10:35:57Z label=initial rss_gib=0.0453 vms_gib=398.5526 sys_available_gib=2.9967 sys_used_gib=3.6281 sys_percent=57.2 swap_used_gib=0.0
+MEM 2026-05-26T10:35:57Z label=background_monitor rss_gib=0.0453 vms_gib=398.5526 sys_available_gib=2.9967 sys_used_gib=3.6281 sys_percent=57.2 swap_used_gib=0.0
+MEM 2026-05-26T10:35:57Z label=before_hf_model_info rss_gib=0.0453 vms_gib=398.5526 sys_available_gib=2.9967 sys_used_gib=3.6281 sys_percent=57.2 swap_used_gib=0.0
 Hugging Face metadata loaded: model_id=Jackrong/MLX-Qwopus3.5-9B-v3-4bit
 Tags: ['mlx', 'safetensors', 'qwen3_5', 'unsloth', 'qwen', 'qwen3.5', 'reasoning', 'chain-of-thought', 'lora', 'competitive-programming', 'text-generation', 'conversational', 'en', 'zh', 'ko', 'base_model:Jackrong/Qwopus3.5-9B-v3', 'base_model:adapter:Jackrong/Qwopus3.5-9B-v3', 'license:apache-2.0', '4-bit', 'region:us']
 Approx selected model/config/tokenizer bytes: 5058234647 (4.7108 GiB)
-MEM 2026-05-26T10:29:25Z label=after_hf_model_info rss_gib=0.0505 vms_gib=398.5541 sys_available_gib=2.9595 sys_used_gib=3.6541 sys_percent=57.7 swap_used_gib=0.0
-MEM 2026-05-26T10:29:25Z label=before_import_mlx rss_gib=0.0505 vms_gib=398.5541 sys_available_gib=2.9595 sys_used_gib=3.6541 sys_percent=57.7 swap_used_gib=0.0
-MEM 2026-05-26T10:29:26Z label=after_import_mlx rss_gib=0.088 vms_gib=398.7081 sys_available_gib=2.9252 sys_used_gib=3.687 sys_percent=58.2 swap_used_gib=0.0
+MEM 2026-05-26T10:35:57Z label=after_hf_model_info rss_gib=0.0498 vms_gib=398.5541 sys_available_gib=2.9967 sys_used_gib=3.6281 sys_percent=57.2 swap_used_gib=0.0
+MEM 2026-05-26T10:35:57Z label=before_import_mlx rss_gib=0.0498 vms_gib=398.5541 sys_available_gib=2.9967 sys_used_gib=3.6281 sys_percent=57.2 swap_used_gib=0.0
+MEM 2026-05-26T10:35:58Z label=after_import_mlx rss_gib=0.087 vms_gib=398.7081 sys_available_gib=2.9564 sys_used_gib=3.6653 sys_percent=57.8 swap_used_gib=0.0
 MLX default device before load: Device(gpu, 0)
 Using tokenizer_config={fix_mistral_regex: True}
-MEM 2026-05-26T10:29:26Z label=before_mlx_load_download_and_map rss_gib=0.088 vms_gib=398.7081 sys_available_gib=2.9252 sys_used_gib=3.687 sys_percent=58.2 swap_used_gib=0.0
-MEM 2026-05-26T10:29:30Z label=background_monitor rss_gib=0.4432 vms_gib=399.2777 sys_available_gib=2.8748 sys_used_gib=3.7217 sys_percent=58.9 swap_used_gib=0.0
-MEM 2026-05-26T10:29:35Z label=background_monitor rss_gib=1.2123 vms_gib=400.355 sys_available_gib=2.8395 sys_used_gib=3.6949 sys_percent=59.4 swap_used_gib=0.0
-MEM 2026-05-26T10:29:41Z label=background_monitor rss_gib=0.6731 vms_gib=401.2057 sys_available_gib=2.0293 sys_used_gib=2.928 sys_percent=71.0 swap_used_gib=0.0
-MEM 2026-05-26T10:29:47Z label=background_monitor rss_gib=1.4384 vms_gib=401.1993 sys_available_gib=2.2014 sys_used_gib=3.1018 sys_percent=68.6 swap_used_gib=0.0
-MEM 2026-05-26T10:29:53Z label=background_monitor rss_gib=2.59 vms_gib=401.3385 sys_available_gib=2.7834 sys_used_gib=3.5764 sys_percent=60.2 swap_used_gib=0.0
-MEM 2026-05-26T10:29:58Z label=background_monitor rss_gib=1.0959 vms_gib=399.7416 sys_available_gib=4.0219 sys_used_gib=2.3466 sys_percent=42.5 swap_used_gib=0.0
-MEM 2026-05-26T10:30:05Z label=background_monitor rss_gib=1.3677 vms_gib=404.9181 sys_available_gib=1.6758 sys_used_gib=2.6053 sys_percent=76.1 swap_used_gib=0.0
-MEM 2026-05-26T10:30:16Z label=background_monitor rss_gib=0.3575 vms_gib=409.0049 sys_available_gib=1.0668 sys_used_gib=1.6661 sys_percent=84.8 swap_used_gib=1.5726
-MEM 2026-05-26T10:30:19Z label=after_mlx_load_before_eval rss_gib=0.7878 vms_gib=409.4255 sys_available_gib=1.5227 sys_used_gib=1.9236 sys_percent=78.2 swap_used_gib=2.1166
-MEM 2026-05-26T10:30:19Z label=after_mx_eval_parameters rss_gib=0.7878 vms_gib=409.4255 sys_available_gib=1.5204 sys_used_gib=1.9243 sys_percent=78.3 swap_used_gib=2.1166
-Loaded model in 53.3970s on Device(gpu, 0)
-MEM 2026-05-26T10:30:19Z label=before_generation_one_token_smoke rss_gib=0.7878 vms_gib=409.4255 sys_available_gib=1.5204 sys_used_gib=1.9243 sys_percent=78.3 swap_used_gib=2.1166
-MEM 2026-05-26T10:30:22Z label=background_monitor rss_gib=0.8179 vms_gib=409.4671 sys_available_gib=1.2786 sys_used_gib=2.4268 sys_percent=81.7 swap_used_gib=2.0932
-MEM 2026-05-26T10:30:27Z label=background_monitor rss_gib=0.8165 vms_gib=409.5967 sys_available_gib=2.4815 sys_used_gib=3.8509 sys_percent=64.5 swap_used_gib=1.8588
-MEM 2026-05-26T10:30:33Z label=background_monitor rss_gib=0.7558 vms_gib=409.6067 sys_available_gib=2.6162 sys_used_gib=3.7142 sys_percent=62.6 swap_used_gib=1.5073
-MEM 2026-05-26T10:30:40Z label=background_monitor rss_gib=0.4599 vms_gib=409.617 sys_available_gib=0.8991 sys_used_gib=1.8761 sys_percent=87.2 swap_used_gib=1.3655
-MEM 2026-05-26T10:30:46Z label=background_monitor rss_gib=0.462 vms_gib=409.6296 sys_available_gib=1.2809 sys_used_gib=3.5856 sys_percent=81.7 swap_used_gib=1.8315
-MEM 2026-05-26T10:30:51Z label=background_monitor rss_gib=0.4608 vms_gib=409.6451 sys_available_gib=1.606 sys_used_gib=5.3218 sys_percent=77.1 swap_used_gib=1.5892
-MEM 2026-05-26T10:30:59Z label=background_monitor rss_gib=0.2697 vms_gib=409.6445 sys_available_gib=1.0279 sys_used_gib=2.3726 sys_percent=85.3 swap_used_gib=1.2557
-MEM 2026-05-26T10:31:04Z label=background_monitor rss_gib=0.2721 vms_gib=409.6994 sys_available_gib=1.0076 sys_used_gib=3.8716 sys_percent=85.6 swap_used_gib=1.4066
-MEM 2026-05-26T10:31:09Z label=background_monitor rss_gib=0.2682 vms_gib=409.6994 sys_available_gib=1.2838 sys_used_gib=2.1515 sys_percent=81.7 swap_used_gib=1.5718
-MEM 2026-05-26T10:31:15Z label=background_monitor rss_gib=0.2676 vms_gib=409.703 sys_available_gib=0.9557 sys_used_gib=2.0394 sys_percent=86.3 swap_used_gib=1.2805
-MEM 2026-05-26T10:31:17Z label=after_generation_one_token_smoke rss_gib=0.2667 vms_gib=409.6674 sys_available_gib=1.3027 sys_used_gib=2.4914 sys_percent=81.4 swap_used_gib=1.5754
-one_token_smoke: passed seconds=57.3947 requested_tps=0.0174 output=I
-MEM 2026-05-26T10:31:17Z label=before_generation_two_token_smoke rss_gib=0.2669 vms_gib=409.6674 sys_available_gib=1.3022 sys_used_gib=2.4925 sys_percent=81.4 swap_used_gib=1.5676
-MEM 2026-05-26T10:31:20Z label=background_monitor rss_gib=0.2843 vms_gib=409.6713 sys_available_gib=1.7219 sys_used_gib=2.7444 sys_percent=75.4 swap_used_gib=1.3234
-MEM 2026-05-26T10:31:25Z label=background_monitor rss_gib=0.2504 vms_gib=409.6897 sys_available_gib=1.4054 sys_used_gib=2.0752 sys_percent=79.9 swap_used_gib=1.6949
-MEM 2026-05-26T10:31:31Z label=background_monitor rss_gib=0.2359 vms_gib=409.7102 sys_available_gib=1.1067 sys_used_gib=1.9979 sys_percent=84.2 swap_used_gib=1.4337
-MEM 2026-05-26T10:31:36Z label=background_monitor rss_gib=0.2359 vms_gib=409.7653 sys_available_gib=1.3483 sys_used_gib=2.9112 sys_percent=80.7 swap_used_gib=1.2205
-MEM 2026-05-26T10:31:41Z label=background_monitor rss_gib=0.1875 vms_gib=409.8202 sys_available_gib=0.8496 sys_used_gib=5.4801 sys_percent=87.9 swap_used_gib=1.1746
-MEM 2026-05-26T10:31:42Z label=after_generation_two_token_smoke rss_gib=0.1886 vms_gib=409.8306 sys_available_gib=0.9303 sys_used_gib=5.999 sys_percent=86.7 swap_used_gib=1.1667
-two_token_smoke: passed seconds=24.7533 requested_tps=0.0808 output=, so
-MEM 2026-05-26T10:31:42Z label=before_generation_eight_token_smoke rss_gib=0.1901 vms_gib=409.8306 sys_available_gib=0.9277 sys_used_gib=6.0006 sys_percent=86.7 swap_used_gib=1.1667
-MEM 2026-05-26T10:31:46Z label=background_monitor rss_gib=0.1932 vms_gib=410.1269 sys_available_gib=0.7103 sys_used_gib=6.1933 sys_percent=89.9 swap_used_gib=1.1589
-MEM 2026-05-26T10:31:50Z label=after_generation_eight_token_smoke rss_gib=0.1785 vms_gib=410.1935 sys_available_gib=0.917 sys_used_gib=5.9866 sys_percent=86.9 swap_used_gib=1.1589
-eight_token_smoke: passed seconds=7.8769 requested_tps=1.0156 output=
+MEM 2026-05-26T10:35:58Z label=before_mlx_load_download_and_map rss_gib=0.087 vms_gib=398.7081 sys_available_gib=2.9564 sys_used_gib=3.6653 sys_percent=57.8 swap_used_gib=0.0
+MEM 2026-05-26T10:36:02Z label=background_monitor rss_gib=0.583 vms_gib=399.4348 sys_available_gib=2.8887 sys_used_gib=3.7215 sys_percent=58.7 swap_used_gib=0.0
+MEM 2026-05-26T10:36:08Z label=background_monitor rss_gib=1.3692 vms_gib=400.188 sys_available_gib=2.852 sys_used_gib=3.707 sys_percent=59.3 swap_used_gib=0.0
+MEM 2026-05-26T10:36:13Z label=background_monitor rss_gib=1.6745 vms_gib=401.0766 sys_available_gib=2.7943 sys_used_gib=3.6693 sys_percent=60.1 swap_used_gib=0.0
+MEM 2026-05-26T10:36:19Z label=background_monitor rss_gib=1.6368 vms_gib=401.1472 sys_available_gib=2.4598 sys_used_gib=3.3582 sys_percent=64.9 swap_used_gib=0.0
+MEM 2026-05-26T10:36:24Z label=background_monitor rss_gib=1.1867 vms_gib=399.9133 sys_available_gib=3.5543 sys_used_gib=2.7893 sys_percent=49.2 swap_used_gib=0.0
+MEM 2026-05-26T10:36:33Z label=background_monitor rss_gib=0.3802 vms_gib=406.9797 sys_available_gib=0.7958 sys_used_gib=1.7439 sys_percent=88.6 swap_used_gib=0.1923
+MEM 2026-05-26T10:36:39Z label=background_monitor rss_gib=0.6076 vms_gib=409.1556 sys_available_gib=1.2576 sys_used_gib=1.8261 sys_percent=82.0 swap_used_gib=1.998
+MEM 2026-05-26T10:36:40Z label=after_mlx_load_before_eval rss_gib=0.739 vms_gib=409.4433 sys_available_gib=1.6521 sys_used_gib=1.8776 sys_percent=76.4 swap_used_gib=2.2643
+MEM 2026-05-26T10:36:40Z label=after_mx_eval_parameters rss_gib=0.739 vms_gib=409.4433 sys_available_gib=1.6521 sys_used_gib=1.8776 sys_percent=76.4 swap_used_gib=2.2643
+Loaded model in 41.9549s on Device(gpu, 0)
+MEM 2026-05-26T10:36:40Z label=before_generation_one_token_smoke rss_gib=0.7392 vms_gib=409.4433 sys_available_gib=1.6521 sys_used_gib=1.8776 sys_percent=76.4 swap_used_gib=2.2643
+MEM 2026-05-26T10:36:45Z label=background_monitor rss_gib=0.7661 vms_gib=409.5965 sys_available_gib=1.4064 sys_used_gib=5.0457 sys_percent=79.9 swap_used_gib=2.0612
+MEM 2026-05-26T10:36:50Z label=background_monitor rss_gib=0.6526 vms_gib=409.6294 sys_available_gib=2.6302 sys_used_gib=3.799 sys_percent=62.4 swap_used_gib=1.4205
+MEM 2026-05-26T10:36:59Z label=background_monitor rss_gib=0.2466 vms_gib=409.7016 sys_available_gib=0.7284 sys_used_gib=1.8847 sys_percent=89.6 swap_used_gib=0.9978
+MEM 2026-05-26T10:37:04Z label=background_monitor rss_gib=0.2502 vms_gib=409.6839 sys_available_gib=1.3524 sys_used_gib=2.231 sys_percent=80.7 swap_used_gib=1.8079
+MEM 2026-05-26T10:37:11Z label=background_monitor rss_gib=0.2482 vms_gib=409.719 sys_available_gib=1.5587 sys_used_gib=2.6475 sys_percent=77.7 swap_used_gib=1.1702
+MEM 2026-05-26T10:37:11Z label=after_generation_one_token_smoke rss_gib=0.2486 vms_gib=409.6982 sys_available_gib=0.9618 sys_used_gib=2.7386 sys_percent=86.3 swap_used_gib=1.1552
+one_token_smoke: passed seconds=31.4673 requested_tps=0.0318 output=I
+MEM 2026-05-26T10:37:11Z label=before_generation_two_token_smoke rss_gib=0.2489 vms_gib=409.6982 sys_available_gib=0.9208 sys_used_gib=2.6966 sys_percent=86.8 swap_used_gib=1.1591
+MEM 2026-05-26T10:37:15Z label=after_generation_two_token_smoke rss_gib=0.2827 vms_gib=409.8473 sys_available_gib=0.8694 sys_used_gib=6.0377 sys_percent=87.6 swap_used_gib=1.1635
+two_token_smoke: passed seconds=3.2225 requested_tps=0.6206 output=, so
+MEM 2026-05-26T10:37:15Z label=before_generation_eight_token_smoke rss_gib=0.2836 vms_gib=409.8473 sys_available_gib=0.8672 sys_used_gib=6.0396 sys_percent=87.6 swap_used_gib=1.1635
+MEM 2026-05-26T10:37:16Z label=background_monitor rss_gib=0.2947 vms_gib=410.0454 sys_available_gib=0.6789 sys_used_gib=6.2058 sys_percent=90.3 swap_used_gib=1.1479
+MEM 2026-05-26T10:37:20Z label=after_generation_eight_token_smoke rss_gib=0.2742 vms_gib=410.2262 sys_available_gib=0.8766 sys_used_gib=6.0048 sys_percent=87.5 swap_used_gib=1.1479
+eight_token_smoke: passed seconds=4.9670 requested_tps=1.6106 output=
 
 <think>
 The user wants me to
-MEM 2026-05-26T10:31:50Z label=final_before_save rss_gib=0.1793 vms_gib=410.1935 sys_available_gib=0.916 sys_used_gib=5.9859 sys_percent=86.9 swap_used_gib=1.1589
-MEM 2026-05-26T10:31:50Z label=finally rss_gib=0.1793 vms_gib=410.1778 sys_available_gib=0.9164 sys_used_gib=5.987 sys_percent=86.9 swap_used_gib=1.1589
+MEM 2026-05-26T10:37:20Z label=final_before_save rss_gib=0.2748 vms_gib=410.2262 sys_available_gib=0.8734 sys_used_gib=6.0067 sys_percent=87.5 swap_used_gib=1.1479
+MEM 2026-05-26T10:37:20Z label=finally rss_gib=0.2748 vms_gib=410.2106 sys_available_gib=0.8703 sys_used_gib=6.0069 sys_percent=87.6 swap_used_gib=1.1479
 Wrote result files
 python_exit=0
