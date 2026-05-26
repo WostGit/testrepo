@@ -9,3 +9,4 @@ platform=macOS-26.4-arm64-arm-64bit
 sw_vers=ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
 mlx_device=Device(gpu, 0)
 loaded_model=Qwen/Qwen2.5-0.5B-Instruct load_seconds=9.8541
+warmup tokens=32 seconds=2.6526
