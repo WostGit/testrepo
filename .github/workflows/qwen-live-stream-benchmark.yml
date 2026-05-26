@@ -1,0 +1,187 @@
+name: Qwen MLX Live Stream Benchmark
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qwen-mlx-live-stream
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install MLX dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade mlx mlx-lm huggingface_hub
+
+      - name: Run live streamed Qwen benchmark
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cat > qwen_live_stream_benchmark.py <<'PY'
+          import json, os, platform, statistics, subprocess, sys, time
+          from pathlib import Path
+          import mlx.core as mx
+          from mlx_lm import generate, load
+
+          model_name = "Qwen/Qwen2.5-0.5B-Instruct"
+          stream_path = Path("mlx-qwen25-05b-live-stream.log")
+          result_path = Path("mlx-qwen25-05b-live-results.txt")
+          json_path = Path("mlx-qwen25-05b-live-results.json")
+          prompts = {
+              "tiny": "Benchmark this model.",
+              "short": "Write one concise sentence about why local LLM inference benchmarks matter.",
+              "long": "Summarize the performance factors for local LLM inference on Apple Silicon: prompt length, KV cache, generation length, memory pressure, GPU use, and repeatability.",
+          }
+          token_sweep = [64, 128, 256, 512]
+          repeats = 3
+          lines = []
+
+          def sh(cmd, check=False):
+              return subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=check).stdout.strip()
+
+          def commit_stream(message):
+              sh(["git", "add", str(stream_path), str(result_path), str(json_path)])
+              out = sh(["git", "commit", "-m", message + " [skip ci]"])
+              if "nothing to commit" not in out.lower():
+                  sh(["git", "push"])
+
+          def log(msg, commit=False):
+              line = str(msg)
+              print(line, flush=True)
+              lines.append(line)
+              stream_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+              if commit:
+                  commit_stream("Stream Qwen MLX benchmark logs")
+
+          started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          stream_path.write_text("", encoding="utf-8")
+          result_path.write_text("Qwen live benchmark started\n", encoding="utf-8")
+          json_path.write_text("{}\n", encoding="utf-8")
+
+          log("Qwen2.5 0.5B MLX live stream benchmark", commit=True)
+          log(f"started_at={started}", commit=True)
+          log(f"repo={os.environ.get('GITHUB_REPOSITORY')}")
+          log(f"sha={os.environ.get('GITHUB_SHA')}")
+          log(f"run_id={os.environ.get('GITHUB_RUN_ID')}")
+          log(f"run_number={os.environ.get('GITHUB_RUN_NUMBER')}")
+          log(f"runner={os.environ.get('RUNNER_NAME')} {os.environ.get('RUNNER_OS')} {os.environ.get('RUNNER_ARCH')}")
+          log(f"platform={platform.platform()}")
+          log("sw_vers=" + sh(["sw_vers"]).replace("\n", " | "), commit=True)
+          log("mlx_device=" + sh(["python", "-c", "import mlx.core as mx; print(mx.default_device())"]), commit=True)
+
+          load_start = time.perf_counter()
+          model, tokenizer = load(model_name)
+          mx.eval(model.parameters())
+          load_seconds = time.perf_counter() - load_start
+          log(f"loaded_model={model_name} load_seconds={load_seconds:.4f}", commit=True)
+
+          def tok_len(text):
+              try: return len(tokenizer.encode(text))
+              except Exception: return None
+
+          warm_start = time.perf_counter()
+          _ = generate(model, tokenizer, prompt=prompts["tiny"], max_tokens=32, verbose=False)
+          warm_seconds = time.perf_counter() - warm_start
+          log(f"warmup tokens=32 seconds={warm_seconds:.4f}", commit=True)
+
+          cases = []
+          best = None
+          all_tps = []
+          for pname, prompt in prompts.items():
+              log(f"prompt_start name={pname} prompt_tokens={tok_len(prompt)}", commit=True)
+              for max_tokens in token_sweep:
+                  timings = []
+                  for rep in range(1, repeats + 1):
+                      t0 = time.perf_counter()
+                      out = generate(model, tokenizer, prompt=prompt, max_tokens=max_tokens, verbose=False)
+                      elapsed = time.perf_counter() - t0
+                      tps = max_tokens / elapsed if elapsed > 0 else 0.0
+                      timings.append(elapsed)
+                      all_tps.append(tps)
+                      log(f"case prompt={pname} max_tokens={max_tokens} repeat={rep}/{repeats} seconds={elapsed:.4f} requested_tps={tps:.4f} output_tokens_encoded={tok_len(out)}", commit=True)
+                  vals = [max_tokens / t for t in timings]
+                  case = {
+                      "prompt": pname,
+                      "max_tokens": max_tokens,
+                      "avg_tps": round(statistics.mean(vals), 4),
+                      "best_tps": round(max(vals), 4),
+                      "median_tps": round(statistics.median(vals), 4),
+                      "seconds": [round(x, 4) for x in timings],
+                  }
+                  cases.append(case)
+                  if best is None or case["best_tps"] > best["best_tps"]:
+                      best = case
+                  partial = {
+                      "status": "running",
+                      "best_case_so_far": best,
+                      "cases_completed": len(cases),
+                      "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                  }
+                  json_path.write_text(json.dumps(partial, indent=2) + "\n", encoding="utf-8")
+                  result_path.write_text("Qwen live benchmark running\n" + json.dumps(partial, indent=2) + "\n", encoding="utf-8")
+                  commit_stream("Stream Qwen MLX benchmark partial result")
+
+          finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          results = {
+              "status": "finished",
+              "model": model_name,
+              "started_at": started,
+              "finished_at": finished,
+              "load_seconds": round(load_seconds, 4),
+              "warmup_seconds": round(warm_seconds, 4),
+              "best_case": best,
+              "overall_best_tps": round(max(all_tps), 4),
+              "overall_avg_tps": round(statistics.mean(all_tps), 4),
+              "cases": cases,
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_number": os.environ.get("GITHUB_RUN_NUMBER"),
+              "sha": os.environ.get("GITHUB_SHA"),
+          }
+          json_path.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
+          result_lines = [
+              "Qwen2.5 0.5B MLX Live Stream Benchmark Results",
+              "================================================",
+              f"Model: {model_name}",
+              f"Run ID: {results['run_id']}",
+              f"Run number: {results['run_number']}",
+              f"Commit: {results['sha']}",
+              f"Started: {started}",
+              f"Finished: {finished}",
+              f"Load seconds: {results['load_seconds']}",
+              f"Warmup seconds: {results['warmup_seconds']}",
+              f"Overall best requested tokens/s: {results['overall_best_tps']}",
+              f"Overall average requested tokens/s: {results['overall_avg_tps']}",
+              "",
+              "Best case:",
+              json.dumps(best, indent=2),
+              "",
+              "Cases:",
+          ]
+          for c in cases:
+              result_lines.append(f"{c['prompt']},{c['max_tokens']},avg={c['avg_tps']},best={c['best_tps']},median={c['median_tps']},seconds={c['seconds']}")
+          result_path.write_text("\n".join(result_lines) + "\n", encoding="utf-8")
+          log(f"finished_at={finished}")
+          log(f"overall_best_tps={results['overall_best_tps']}", commit=True)
+          commit_stream("Write live streamed MLX Qwen benchmark results")
+          PY
+          python qwen_live_stream_benchmark.py
