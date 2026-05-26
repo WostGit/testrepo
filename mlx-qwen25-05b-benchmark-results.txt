@@ -1,21 +1,21 @@
 Qwen2.5 0.5B MLX Benchmark Results
 ====================================
 Model: Qwen/Qwen2.5-0.5B-Instruct
-Runner: GitHub Actions 1000004741 (macOS, ARM64)
+Runner: GitHub Actions 1000004742 (macOS, ARM64)
 Machine: arm64
 Platform: macOS-26.4-arm64-arm-64bit
 GitHub repo: WostGit/testrepo
-Commit: b0ac3c1f309471128d06f707e7987f42037fe90d
-Run ID: 26442907501
-Run number: 6
+Commit: 0e906d9e03301c06cf929f63c1f695286a1ad29f
+Run ID: 26442982457
+Run number: 7
 Actor: WostGit
-Started at: 2026-05-26T09:04:28Z
-Finished at: 2026-05-26T09:04:38Z
+Started at: 2026-05-26T09:05:22Z
+Finished at: 2026-05-26T09:05:32Z
 
-Load time: 7.1189 s
-Warmup: 8 tokens in 1.4506 s
-Benchmark: 64 requested tokens in 1.8127 s
-Throughput: 35.306 requested tokens/s
+Load time: 6.8359 s
+Warmup: 8 tokens in 1.529 s
+Benchmark: 64 requested tokens in 1.6323 s
+Throughput: 39.2082 requested tokens/s
 
 Prompt:
 Write one concise sentence about why local LLM inference benchmarks matter.
