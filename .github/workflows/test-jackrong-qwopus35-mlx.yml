@@ -1,4 +1,4 @@
-name: Test jackrong Qwopus 3.5 MLX
+name: Test Jackrong Qwopus3.5 4B v3 MLX
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   test-qwopus-mlx:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,24 +29,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade mlx mlx-lm huggingface_hub
 
-      - name: Discover and test smallest jackrong Qwopus 3.5 MLX model
+      - name: Test Jackrong Qwopus3.5 4B v3 with MLX
         run: |
           cat > test_jackrong_qwopus35_mlx.py <<'PY'
           import json
           import os
           import platform
-          import re
           import subprocess
-          import sys
           import time
           import traceback
           from pathlib import Path
 
           from huggingface_hub import HfApi
 
-          RESULT_MD = Path('jackrong-qwopus35-mlx-test-results.md')
-          RESULT_JSON = Path('jackrong-qwopus35-mlx-test-results.json')
-          LOG = Path('jackrong-qwopus35-mlx-test.log')
+          MODEL_ID = 'Jackrong/Qwopus3.5-4B-v3'
+          RESULT_MD = Path('jackrong-qwopus35-4b-v3-mlx-test-results.md')
+          RESULT_JSON = Path('jackrong-qwopus35-4b-v3-mlx-test-results.json')
+          LOG = Path('jackrong-qwopus35-4b-v3-mlx-test.log')
 
           def log(msg):
               text = str(msg)
@@ -60,32 +59,24 @@ jobs:
               except Exception as exc:
                   return f'unavailable: {exc}'
 
-          def model_file_size(info):
+          def file_summary(info):
+              rows = []
               total = 0
-              files = []
               for s in getattr(info, 'siblings', []) or []:
                   name = getattr(s, 'rfilename', '') or ''
                   size = getattr(s, 'size', None) or 0
-                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf', '.mlx')) or 'model' in name.lower():
+                  if name.endswith(('.safetensors', '.bin', '.npz', '.gguf')) or 'model' in name.lower() or name in {'config.json', 'tokenizer.json'}:
+                      rows.append({'name': name, 'size': int(size or 0)})
                       total += int(size or 0)
-                      files.append({'name': name, 'size': int(size or 0)})
-              return total, files
-
-          def is_qwopus35(model_id):
-              x = model_id.lower()
-              has_qwopus = 'qwopus' in x or ('qw' in x and 'opus' in x)
-              has_35 = any(t in x for t in ['3.5', '3-5', '3_5', '35'])
-              return has_qwopus and has_35
-
-          def is_mlx_candidate(model_id, tags):
-              x = model_id.lower()
-              tag_text = ' '.join([str(t).lower() for t in tags or []])
-              return 'mlx' in x or 'mlx' in tag_text
+              rows.sort(key=lambda r: r['name'])
+              return total, rows
 
           started = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
           LOG.write_text('', encoding='utf-8')
           result = {
               'status': 'started',
+              'model_id': MODEL_ID,
+              'model_url': 'https://huggingface.co/' + MODEL_ID,
               'started_at': started,
               'github_sha': os.environ.get('GITHUB_SHA'),
               'github_run_id': os.environ.get('GITHUB_RUN_ID'),
@@ -98,59 +89,36 @@ jobs:
           }
 
           try:
-              log('Starting jackrong Qwopus 3.5 MLX discovery/test')
+              log(f'Testing exact Hugging Face model: {MODEL_ID}')
               log(f"GitHub SHA: {result['github_sha']}")
               log(f"Runner: {result['runner']} {result['runner_os']} {result['runner_arch']}")
               log('macOS: ' + result['macos_version'].replace('\n', ' | '))
 
               api = HfApi()
-              searches = ['qwopus', 'Qwopus', 'opus', '3.5']
-              seen = {}
-              for search in searches:
-                  log(f'Searching Hugging Face models: author=jackrong search={search!r}')
-                  for m in api.list_models(author='jackrong', search=search, full=True, limit=100):
-                      seen[m.modelId] = m
-              all_models = sorted(seen.values(), key=lambda m: m.modelId.lower())
-              log(f'Found {len(all_models)} jackrong models matching broad searches')
-
-              candidates = []
-              diagnostics = []
-              for m in all_models:
-                  tags = getattr(m, 'tags', []) or []
-                  mid = m.modelId
-                  diag = {'model_id': mid, 'tags': tags}
-                  diagnostics.append(diag)
-                  if is_qwopus35(mid) and is_mlx_candidate(mid, tags):
-                      info = api.model_info(mid, files_metadata=True)
-                      total_size, files = model_file_size(info)
-                      candidates.append({
-                          'model_id': mid,
-                          'tags': tags,
-                          'model_file_bytes': total_size,
-                          'model_files': files[:20],
-                      })
-
-              candidates.sort(key=lambda c: (c['model_file_bytes'] or 10**30, c['model_id'].lower()))
-              result['discovered_models'] = diagnostics
-              result['candidates'] = candidates
-              log(f'Filtered to {len(candidates)} Qwopus 3.5 MLX-looking candidates')
-
-              if not candidates:
-                  result['status'] = 'no_matching_model'
-                  result['message'] = 'No jackrong model matching qwopus + 3.5 + mlx was found by Hugging Face Hub search.'
-                  raise SystemExit(0)
-
-              selected = candidates[0]['model_id']
-              result['selected_model'] = candidates[0]
-              log(f'Selected smallest candidate: {selected}')
-              log(f"Estimated model-file bytes: {candidates[0]['model_file_bytes']}")
+              info = api.model_info(MODEL_ID, files_metadata=True)
+              total_size, files = file_summary(info)
+              result['huggingface'] = {
+                  'model_id': info.modelId,
+                  'sha': getattr(info, 'sha', None),
+                  'private': getattr(info, 'private', None),
+                  'tags': getattr(info, 'tags', []) or [],
+                  'pipeline_tag': getattr(info, 'pipeline_tag', None),
+                  'library_name': getattr(info, 'library_name', None),
+                  'model_file_bytes_selected': total_size,
+                  'files': files[:80],
+              }
+              log(f'Hugging Face metadata loaded: model_id={info.modelId}')
+              log(f"Tags: {result['huggingface']['tags']}")
+              log(f'Approx selected model/config/tokenizer bytes: {total_size}')
 
               import mlx.core as mx
               from mlx_lm import generate, load
 
               result['mlx_default_device_before_load'] = str(mx.default_device())
+              log(f"MLX default device before load: {result['mlx_default_device_before_load']}")
+
               load_start = time.perf_counter()
-              model, tokenizer = load(selected)
+              model, tokenizer = load(MODEL_ID)
               mx.eval(model.parameters())
               load_seconds = time.perf_counter() - load_start
               result['load_seconds'] = round(load_seconds, 4)
@@ -158,13 +126,13 @@ jobs:
               log(f'Loaded model in {load_seconds:.4f}s on {mx.default_device()}')
 
               prompts = [
-                  'Reply with exactly one short sentence confirming the model is working.',
-                  'Give two bullet points about MLX inference performance testing.',
+                  ('smoke_short', 'Reply with exactly one short sentence confirming the model is running on MLX.'),
+                  ('smoke_bullets', 'Give two short bullet points about why MLX inference tests are useful.'),
               ]
               tests = []
-              for i, prompt in enumerate(prompts, 1):
+              for name, prompt in prompts:
                   t0 = time.perf_counter()
-                  output = generate(model, tokenizer, prompt=prompt, max_tokens=32, verbose=False)
+                  output = generate(model, tokenizer, prompt=prompt, max_tokens=64, verbose=False)
                   elapsed = time.perf_counter() - t0
                   try:
                       out_tokens = len(tokenizer.encode(output))
@@ -172,22 +140,21 @@ jobs:
                       out_tokens = None
                   ok = bool(output and output.strip())
                   test = {
-                      'name': f'generation_smoke_{i}',
+                      'name': name,
                       'prompt': prompt,
                       'elapsed_seconds': round(elapsed, 4),
-                      'requested_tokens_per_second': round(32 / elapsed, 4) if elapsed > 0 else None,
+                      'requested_tokens_per_second': round(64 / elapsed, 4) if elapsed > 0 else None,
                       'output_tokens_encoded': out_tokens,
                       'ok': ok,
-                      'output_preview': output[:500],
+                      'output_preview': output[:1000],
                   }
                   tests.append(test)
-                  log(f"{test['name']}: ok={ok} seconds={test['elapsed_seconds']} requested_tps={test['requested_tokens_per_second']} tokens={out_tokens}")
+                  log(f"{name}: ok={ok} seconds={test['elapsed_seconds']} requested_tps={test['requested_tokens_per_second']} tokens={out_tokens}")
+                  log('Output preview: ' + output[:300].replace('\n', ' | '))
 
               result['tests'] = tests
               result['status'] = 'passed' if all(t['ok'] for t in tests) else 'failed'
 
-          except SystemExit:
-              pass
           except Exception as exc:
               result['status'] = 'error'
               result['error'] = repr(exc)
@@ -198,9 +165,11 @@ jobs:
               result['finished_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
               RESULT_JSON.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
               lines = [
-                  '# jackrong Qwopus 3.5 MLX test results',
+                  '# Jackrong/Qwopus3.5-4B-v3 MLX test results',
                   '',
                   f"Status: `{result.get('status')}`",
+                  f"Model: `{MODEL_ID}`",
+                  f"Model URL: <https://huggingface.co/{MODEL_ID}>",
                   f"Started: `{result.get('started_at')}`",
                   f"Finished: `{result.get('finished_at')}`",
                   f"Runner: `{result.get('runner')} {result.get('runner_os')} {result.get('runner_arch')}`",
@@ -208,15 +177,28 @@ jobs:
                   f"GitHub SHA: `{result.get('github_sha')}`",
                   '',
               ]
-              if result.get('selected_model'):
+              if result.get('huggingface'):
+                  hf = result['huggingface']
                   lines += [
-                      '## Selected model',
-                      f"`{result['selected_model']['model_id']}`",
-                      f"Estimated model file bytes: `{result['selected_model']['model_file_bytes']}`",
+                      '## Hugging Face metadata',
+                      f"Model ID: `{hf.get('model_id')}`",
+                      f"Revision SHA: `{hf.get('sha')}`",
+                      f"Library: `{hf.get('library_name')}`",
+                      f"Pipeline: `{hf.get('pipeline_tag')}`",
+                      f"Tags: `{hf.get('tags')}`",
+                      f"Approx selected file bytes: `{hf.get('model_file_bytes_selected')}`",
                       '',
                   ]
-              if result.get('message'):
-                  lines += ['## Message', result['message'], '']
+              if result.get('load_seconds') is not None:
+                  lines += [
+                      '## MLX load',
+                      f"Load seconds: `{result.get('load_seconds')}`",
+                      f"Device before load: `{result.get('mlx_default_device_before_load')}`",
+                      f"Device after load: `{result.get('mlx_default_device_after_load')}`",
+                      '',
+                  ]
+              if result.get('error'):
+                  lines += ['## Error', f"`{result['error']}`", '', '```text', result.get('traceback', ''), '```', '']
               if result.get('tests'):
                   lines += ['## Tests', '| Test | OK | Seconds | Requested tok/s | Encoded output tokens |', '|---|---:|---:|---:|---:|']
                   for t in result['tests']:
@@ -229,7 +211,7 @@ jobs:
                       lines.append(t['output_preview'])
                       lines.append('```')
                       lines.append('')
-              lines += ['## Candidate count', f"`{len(result.get('candidates', []))}`", '', 'See JSON and log files for full discovery diagnostics.']
+              lines += ['See JSON and log files for full details.']
               RESULT_MD.write_text('\n'.join(lines) + '\n', encoding='utf-8')
               log('Wrote result files')
           PY
@@ -240,6 +222,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add jackrong-qwopus35-mlx-test-results.md jackrong-qwopus35-mlx-test-results.json jackrong-qwopus35-mlx-test.log || true
-          git commit -m "Write jackrong Qwopus 3.5 MLX test results [skip ci]" || echo "No result changes to commit"
+          git add jackrong-qwopus35-4b-v3-mlx-test-results.md jackrong-qwopus35-4b-v3-mlx-test-results.json jackrong-qwopus35-4b-v3-mlx-test.log || true
+          git commit -m "Write Jackrong Qwopus3.5 4B v3 MLX test results [skip ci]" || echo "No result changes to commit"
           git push || echo "No result push performed"
