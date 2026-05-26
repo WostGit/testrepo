@@ -16,7 +16,7 @@ concurrency:
 jobs:
   benchmark:
     runs-on: macos-26
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,9 +33,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade mlx mlx-lm huggingface_hub
 
-      - name: Extended benchmark Qwen2.5 0.5B with MLX
+      - name: Maximum benchmark Qwen2.5 0.5B with MLX
         run: |
-          cat > benchmark_qwen_mlx_extended.py <<'PY'
+          set -o pipefail
+          cat > benchmark_qwen_mlx_max.py <<'PY'
           import json
           import os
           import platform
@@ -50,15 +51,24 @@ jobs:
 
           model_name = "Qwen/Qwen2.5-0.5B-Instruct"
           prompts = {
+              "tiny": "Benchmark this model.",
               "short": "Write one concise sentence about why local LLM inference benchmarks matter.",
               "medium": "In one paragraph, explain the practical tradeoffs of running small language models locally on Apple Silicon.",
-              "long": "You are benchmarking a local language model. Summarize the key factors that affect prefill latency, generation throughput, memory use, and repeatability. Keep the answer focused and technical.",
+              "long": "You are benchmarking a local language model. Summarize the key factors that affect prefill latency, generation throughput, memory use, cache behavior, and repeatability. Keep the answer focused and technical.",
           }
-          token_sweep = [32, 64, 128, 256]
-          repeats = 3
-          warmup_tokens = 16
+          token_sweep = [32, 64, 128, 256, 512]
+          repeats = 4
+          warmup_tokens = 32
           result_path = Path("mlx-qwen25-05b-benchmark-results.txt")
           json_path = Path("mlx-qwen25-05b-benchmark-results.json")
+          log_path = Path("mlx-qwen25-05b-benchmark-run.log")
+
+          log_lines = []
+          def log(message):
+              line = str(message)
+              print(line, flush=True)
+              log_lines.append(line)
+              log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
 
           def command_output(cmd):
               try:
@@ -66,26 +76,41 @@ jobs:
               except Exception as exc:
                   return f"unavailable: {exc}"
 
+          started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+          log(f"Started benchmark at {started_at}")
+          log(f"Repository: {os.environ.get('GITHUB_REPOSITORY')}")
+          log(f"Commit: {os.environ.get('GITHUB_SHA')}")
+          log(f"Run ID: {os.environ.get('GITHUB_RUN_ID')}")
+          log(f"Run number: {os.environ.get('GITHUB_RUN_NUMBER')}")
+          log(f"Runner: {os.environ.get('RUNNER_NAME')} {os.environ.get('RUNNER_OS')} {os.environ.get('RUNNER_ARCH')}")
+          log("macOS version:")
+          log(command_output(["sw_vers"]))
+          log("MLX default device probe before load:")
+          log(command_output(["python", "-c", "import mlx.core as mx; print(mx.default_device())"]))
+
+          load_start = time.perf_counter()
+          model, tokenizer = load(model_name)
+          mx.eval(model.parameters())
+          load_seconds = time.perf_counter() - load_start
+          log(f"Loaded {model_name} in {load_seconds:.4f}s")
+
           def encode_len(text):
               try:
                   return len(tokenizer.encode(text))
               except Exception:
                   return None
 
-          started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-          load_start = time.perf_counter()
-          model, tokenizer = load(model_name)
-          mx.eval(model.parameters())
-          load_seconds = time.perf_counter() - load_start
-
           warmup_start = time.perf_counter()
-          _ = generate(model, tokenizer, prompt=prompts["short"], max_tokens=warmup_tokens, verbose=False)
+          _ = generate(model, tokenizer, prompt=prompts["tiny"], max_tokens=warmup_tokens, verbose=False)
           warmup_seconds = time.perf_counter() - warmup_start
+          log(f"Warmup: {warmup_tokens} tokens in {warmup_seconds:.4f}s")
 
           cases = []
           best_case = None
+          all_tps = []
           for prompt_name, prompt in prompts.items():
               prompt_tokens = encode_len(prompt)
+              log(f"Prompt {prompt_name}: {prompt_tokens} prompt tokens")
               for max_tokens in token_sweep:
                   run_times = []
                   actual_output_tokens = []
@@ -97,8 +122,11 @@ jobs:
                       run_times.append(elapsed)
                       actual_tokens = encode_len(output)
                       actual_output_tokens.append(actual_tokens)
+                      tps = max_tokens / elapsed if elapsed > 0 else 0.0
+                      all_tps.append(tps)
+                      log(f"case={prompt_name} tokens={max_tokens} repeat={rep}/{repeats} seconds={elapsed:.4f} requested_tps={tps:.4f} actual_encoded_output_tokens={actual_tokens}")
                       if rep == 1:
-                          samples.append(output[:600])
+                          samples.append(output[:800])
                   requested_tps = [max_tokens / t for t in run_times if t > 0]
                   case = {
                       "prompt_name": prompt_name,
@@ -121,7 +149,7 @@ jobs:
 
           finished_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
           results = {
-              "benchmark": "Qwen2.5 0.5B MLX extended generation benchmark",
+              "benchmark": "Qwen2.5 0.5B MLX maximum generation benchmark",
               "model": model_name,
               "prompts": prompts,
               "token_sweep": token_sweep,
@@ -130,6 +158,8 @@ jobs:
               "load_seconds": round(load_seconds, 4),
               "warmup_seconds": round(warmup_seconds, 4),
               "best_case": best_case,
+              "overall_best_requested_tokens_per_second": round(max(all_tps), 4) if all_tps else None,
+              "overall_avg_requested_tokens_per_second": round(statistics.mean(all_tps), 4) if all_tps else None,
               "cases": cases,
               "runner": os.environ.get("RUNNER_NAME"),
               "runner_os": os.environ.get("RUNNER_OS"),
@@ -148,12 +178,11 @@ jobs:
               "started_at": started_at,
               "finished_at": finished_at,
           }
-
           json_path.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
 
           lines = []
-          lines.append("Qwen2.5 0.5B MLX Extended Benchmark Results")
-          lines.append("============================================")
+          lines.append("Qwen2.5 0.5B MLX Maximum Benchmark Results")
+          lines.append("===========================================")
           lines.append(f"Model: {model_name}")
           lines.append(f"Runner: {results['runner']} ({results['runner_os']}, {results['runner_arch']})")
           lines.append(f"Machine: {results['machine']}")
@@ -167,6 +196,8 @@ jobs:
           lines.append("")
           lines.append(f"Load time: {results['load_seconds']} s")
           lines.append(f"Warmup: {warmup_tokens} tokens in {results['warmup_seconds']} s")
+          lines.append(f"Overall best throughput: {results['overall_best_requested_tokens_per_second']} requested tokens/s")
+          lines.append(f"Overall average throughput: {results['overall_avg_requested_tokens_per_second']} requested tokens/s")
           lines.append("")
           if best_case:
               lines.append("Best observed case")
@@ -194,18 +225,19 @@ jobs:
           lines.append("Sample output from best case")
           lines.append("----------------------------")
           lines.append(best_case.get("sample_output", "") if best_case else "")
-          lines.append("")
           result_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          log(f"Finished benchmark at {finished_at}")
+          log(f"Best requested tokens/s: {results['overall_best_requested_tokens_per_second']}")
           print(result_path.read_text(encoding="utf-8"))
           PY
 
-          python benchmark_qwen_mlx_extended.py
+          python benchmark_qwen_mlx_max.py 2>&1 | tee mlx-qwen25-05b-workflow-output.log
 
-      - name: Commit benchmark results back to repo
+      - name: Commit benchmark results and logs back to repo
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mlx-qwen25-05b-benchmark-results.txt mlx-qwen25-05b-benchmark-results.json || true
-          git commit -m "Write extended MLX Qwen benchmark results" || echo "No benchmark result changes to commit"
+          git add mlx-qwen25-05b-benchmark-results.txt mlx-qwen25-05b-benchmark-results.json mlx-qwen25-05b-benchmark-run.log mlx-qwen25-05b-workflow-output.log || true
+          git commit -m "Write maximum MLX Qwen benchmark results" || echo "No benchmark result changes to commit"
           git push || echo "No benchmark results pushed"
