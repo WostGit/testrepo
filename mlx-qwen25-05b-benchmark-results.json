@@ -1,27 +1,388 @@
 {
-  "benchmark": "Qwen2.5 0.5B MLX generation benchmark",
+  "benchmark": "Qwen2.5 0.5B MLX extended generation benchmark",
   "model": "Qwen/Qwen2.5-0.5B-Instruct",
-  "prompt": "Write one concise sentence about why local LLM inference benchmarks matter.",
-  "requested_output_tokens": 64,
-  "warmup_tokens": 8,
-  "load_seconds": 6.8359,
-  "warmup_seconds": 1.529,
-  "generation_seconds": 1.6323,
-  "tokens_per_second_requested": 39.2082,
-  "generated_text": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs",
-  "runner": "GitHub Actions 1000004742",
+  "prompts": {
+    "short": "Write one concise sentence about why local LLM inference benchmarks matter.",
+    "medium": "In one paragraph, explain the practical tradeoffs of running small language models locally on Apple Silicon.",
+    "long": "You are benchmarking a local language model. Summarize the key factors that affect prefill latency, generation throughput, memory use, and repeatability. Keep the answer focused and technical."
+  },
+  "token_sweep": [
+    32,
+    64,
+    128,
+    256
+  ],
+  "repeats": 3,
+  "warmup_tokens": 16,
+  "load_seconds": 7.3617,
+  "warmup_seconds": 2.0309,
+  "best_case": {
+    "prompt_name": "short",
+    "prompt_tokens": 13,
+    "requested_output_tokens": 256,
+    "repeats": 3,
+    "seconds": [
+      5.6046,
+      5.4264,
+      5.6411
+    ],
+    "requested_tokens_per_second": [
+      45.6768,
+      47.1769,
+      45.3811
+    ],
+    "avg_requested_tokens_per_second": 46.0783,
+    "best_requested_tokens_per_second": 47.1769,
+    "median_requested_tokens_per_second": 45.6768,
+    "avg_seconds": 5.5574,
+    "best_seconds": 5.4264,
+    "actual_output_tokens_encoded": [
+      256,
+      256,
+      256
+    ],
+    "sample_output": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs. Additionally, benchmarking can help to identify emerging trends and challenges in the field, allowing for ongoing research and development to keep pace with the rapid"
+  },
+  "cases": [
+    {
+      "prompt_name": "short",
+      "prompt_tokens": 13,
+      "requested_output_tokens": 32,
+      "repeats": 3,
+      "seconds": [
+        0.839,
+        0.8536,
+        0.9177
+      ],
+      "requested_tokens_per_second": [
+        38.1423,
+        37.4901,
+        34.8694
+      ],
+      "avg_requested_tokens_per_second": 36.8339,
+      "best_requested_tokens_per_second": 38.1423,
+      "median_requested_tokens_per_second": 37.4901,
+      "avg_seconds": 0.8701,
+      "best_seconds": 0.839,
+      "actual_output_tokens_encoded": [
+        32,
+        32,
+        32
+      ],
+      "sample_output": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach"
+    },
+    {
+      "prompt_name": "short",
+      "prompt_tokens": 13,
+      "requested_output_tokens": 64,
+      "repeats": 3,
+      "seconds": [
+        1.6379,
+        1.7721,
+        1.6049
+      ],
+      "requested_tokens_per_second": [
+        39.0734,
+        36.1163,
+        39.879
+      ],
+      "avg_requested_tokens_per_second": 38.3562,
+      "best_requested_tokens_per_second": 39.879,
+      "median_requested_tokens_per_second": 39.0734,
+      "avg_seconds": 1.6716,
+      "best_seconds": 1.6049,
+      "actual_output_tokens_encoded": [
+        64,
+        64,
+        64
+      ],
+      "sample_output": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs"
+    },
+    {
+      "prompt_name": "short",
+      "prompt_tokens": 13,
+      "requested_output_tokens": 128,
+      "repeats": 3,
+      "seconds": [
+        2.9809,
+        2.9068,
+        2.9765
+      ],
+      "requested_tokens_per_second": [
+        42.9396,
+        44.0351,
+        43.0042
+      ],
+      "avg_requested_tokens_per_second": 43.3263,
+      "best_requested_tokens_per_second": 44.0351,
+      "median_requested_tokens_per_second": 43.0042,
+      "avg_seconds": 2.9547,
+      "best_seconds": 2.9068,
+      "actual_output_tokens_encoded": [
+        128,
+        128,
+        128
+      ],
+      "sample_output": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs. Additionally, benchmarking can help to identify emerging trends and challenges in the field, allowing for ongoing research and development to keep pace with the rapid"
+    },
+    {
+      "prompt_name": "short",
+      "prompt_tokens": 13,
+      "requested_output_tokens": 256,
+      "repeats": 3,
+      "seconds": [
+        5.6046,
+        5.4264,
+        5.6411
+      ],
+      "requested_tokens_per_second": [
+        45.6768,
+        47.1769,
+        45.3811
+      ],
+      "avg_requested_tokens_per_second": 46.0783,
+      "best_requested_tokens_per_second": 47.1769,
+      "median_requested_tokens_per_second": 45.6768,
+      "avg_seconds": 5.5574,
+      "best_seconds": 5.4264,
+      "actual_output_tokens_encoded": [
+        256,
+        256,
+        256
+      ],
+      "sample_output": "Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs. Additionally, benchmarking can help to identify emerging trends and challenges in the field, allowing for ongoing research and development to keep pace with the rapid"
+    },
+    {
+      "prompt_name": "medium",
+      "prompt_tokens": 19,
+      "requested_output_tokens": 32,
+      "repeats": 3,
+      "seconds": [
+        0.8435,
+        0.9543,
+        0.8813
+      ],
+      "requested_tokens_per_second": [
+        37.9383,
+        33.5333,
+        36.3087
+      ],
+      "avg_requested_tokens_per_second": 35.9267,
+      "best_requested_tokens_per_second": 37.9383,
+      "median_requested_tokens_per_second": 36.3087,
+      "avg_seconds": 0.893,
+      "best_seconds": 0.8435,
+      "actual_output_tokens_encoded": [
+        32,
+        32,
+        32
+      ],
+      "sample_output": "Running small language models locally on Apple Silicon can offer several practical tradeoffs, including:\n\n1. Limited computational resources: Apple Silicon is designed for low-power, low"
+    },
+    {
+      "prompt_name": "medium",
+      "prompt_tokens": 19,
+      "requested_output_tokens": 64,
+      "repeats": 3,
+      "seconds": [
+        1.5411,
+        1.5221,
+        1.5657
+      ],
+      "requested_tokens_per_second": [
+        41.5287,
+        42.0467,
+        40.8753
+      ],
+      "avg_requested_tokens_per_second": 41.4836,
+      "best_requested_tokens_per_second": 42.0467,
+      "median_requested_tokens_per_second": 41.5287,
+      "avg_seconds": 1.543,
+      "best_seconds": 1.5221,
+      "actual_output_tokens_encoded": [
+        64,
+        64,
+        64
+      ],
+      "sample_output": "Running small language models locally on Apple Silicon can offer several practical tradeoffs, including:\n\n1. Limited computational resources: Apple Silicon is designed for low-power, low-cost computing, which means it may not have the same level of computational resources as more powerful hardware. This can limit the ability to run large models or large amounts"
+    },
+    {
+      "prompt_name": "medium",
+      "prompt_tokens": 19,
+      "requested_output_tokens": 128,
+      "repeats": 3,
+      "seconds": [
+        3.0084,
+        2.9317,
+        3.1664
+      ],
+      "requested_tokens_per_second": [
+        42.5473,
+        43.6607,
+        40.4244
+      ],
+      "avg_requested_tokens_per_second": 42.2108,
+      "best_requested_tokens_per_second": 43.6607,
+      "median_requested_tokens_per_second": 42.5473,
+      "avg_seconds": 3.0355,
+      "best_seconds": 2.9317,
+      "actual_output_tokens_encoded": [
+        128,
+        128,
+        128
+      ],
+      "sample_output": "Running small language models locally on Apple Silicon can offer several practical tradeoffs, including:\n\n1. Limited computational resources: Apple Silicon is designed for low-power, low-cost computing, which means it may not have the same level of computational resources as more powerful hardware. This can limit the ability to run large models or large amounts of data.\n\n2. Limited hardware support: Apple Silicon is not as well-supported as more powerful hardware, which can limit the availability of libraries and frameworks that are necessary for running large models or large amounts of data.\n"
+    },
+    {
+      "prompt_name": "medium",
+      "prompt_tokens": 19,
+      "requested_output_tokens": 256,
+      "repeats": 3,
+      "seconds": [
+        6.1037,
+        5.9362,
+        6.7034
+      ],
+      "requested_tokens_per_second": [
+        41.9416,
+        43.1254,
+        38.1896
+      ],
+      "avg_requested_tokens_per_second": 41.0855,
+      "best_requested_tokens_per_second": 43.1254,
+      "median_requested_tokens_per_second": 41.9416,
+      "avg_seconds": 6.2478,
+      "best_seconds": 5.9362,
+      "actual_output_tokens_encoded": [
+        256,
+        256,
+        256
+      ],
+      "sample_output": "Running small language models locally on Apple Silicon can offer several practical tradeoffs, including:\n\n1. Limited computational resources: Apple Silicon is designed for low-power, low-cost computing, which means it may not have the same level of computational resources as more powerful hardware. This can limit the ability to run large models or large amounts of data.\n\n2. Limited hardware support: Apple Silicon is not as well-supported as more powerful hardware, which can limit the availability of libraries and frameworks that are necessary for running large models or large amounts of data.\n"
+    },
+    {
+      "prompt_name": "long",
+      "prompt_tokens": 39,
+      "requested_output_tokens": 32,
+      "repeats": 3,
+      "seconds": [
+        1.0494,
+        1.051,
+        1.0011
+      ],
+      "requested_tokens_per_second": [
+        30.4942,
+        30.4472,
+        31.964
+      ],
+      "avg_requested_tokens_per_second": 30.9685,
+      "best_requested_tokens_per_second": 31.964,
+      "median_requested_tokens_per_second": 30.4942,
+      "avg_seconds": 1.0338,
+      "best_seconds": 1.0011,
+      "actual_output_tokens_encoded": [
+        32,
+        32,
+        32
+      ],
+      "sample_output": "The key factors affecting the performance of a language model include:\n\n1. **Data Size**: Larger datasets require more memory and processing power to store and process. This"
+    },
+    {
+      "prompt_name": "long",
+      "prompt_tokens": 39,
+      "requested_output_tokens": 64,
+      "repeats": 3,
+      "seconds": [
+        1.7246,
+        1.7457,
+        1.729
+      ],
+      "requested_tokens_per_second": [
+        37.1102,
+        36.662,
+        37.0152
+      ],
+      "avg_requested_tokens_per_second": 36.9291,
+      "best_requested_tokens_per_second": 37.1102,
+      "median_requested_tokens_per_second": 37.0152,
+      "avg_seconds": 1.7331,
+      "best_seconds": 1.7246,
+      "actual_output_tokens_encoded": [
+        64,
+        64,
+        64
+      ],
+      "sample_output": "The key factors affecting the performance of a language model include:\n\n1. **Data Size**: Larger datasets require more memory and processing power to store and process. This can lead to increased prefill latency and generation throughput.\n\n2. **Model Complexity**: More complex models require more computational resources, which can increase prefill latency and"
+    },
+    {
+      "prompt_name": "long",
+      "prompt_tokens": 39,
+      "requested_output_tokens": 128,
+      "repeats": 3,
+      "seconds": [
+        3.1098,
+        3.0686,
+        2.8648
+      ],
+      "requested_tokens_per_second": [
+        41.1597,
+        41.7132,
+        44.6799
+      ],
+      "avg_requested_tokens_per_second": 42.5176,
+      "best_requested_tokens_per_second": 44.6799,
+      "median_requested_tokens_per_second": 41.7132,
+      "avg_seconds": 3.0144,
+      "best_seconds": 2.8648,
+      "actual_output_tokens_encoded": [
+        128,
+        128,
+        128
+      ],
+      "sample_output": "The key factors affecting the performance of a language model include:\n\n1. **Data Size**: Larger datasets require more memory and processing power to store and process. This can lead to increased prefill latency and generation throughput.\n\n2. **Model Complexity**: More complex models require more computational resources, which can increase prefill latency and generation throughput.\n\n3. **Training Data**: High-quality training data is essential for a model to learn and generate coherent text. Poor quality data can lead to lower prefill latency and generation throughput.\n\n4. **Training Environme"
+    },
+    {
+      "prompt_name": "long",
+      "prompt_tokens": 39,
+      "requested_output_tokens": 256,
+      "repeats": 3,
+      "seconds": [
+        5.8715,
+        6.003,
+        6.0015
+      ],
+      "requested_tokens_per_second": [
+        43.6008,
+        42.6456,
+        42.6563
+      ],
+      "avg_requested_tokens_per_second": 42.9676,
+      "best_requested_tokens_per_second": 43.6008,
+      "median_requested_tokens_per_second": 42.6563,
+      "avg_seconds": 5.9586,
+      "best_seconds": 5.8715,
+      "actual_output_tokens_encoded": [
+        256,
+        256,
+        256
+      ],
+      "sample_output": "The key factors affecting the performance of a language model include:\n\n1. **Data Size**: Larger datasets require more memory and processing power to store and process. This can lead to increased prefill latency and generation throughput.\n\n2. **Model Complexity**: More complex models require more computational resources, which can increase prefill latency and generation throughput.\n\n3. **Training Data**: High-quality training data is essential for a model to learn and generate coherent text. Poor quality data can lead to lower prefill latency and generation throughput.\n\n4. **Training Environme"
+    }
+  ],
+  "runner": "GitHub Actions 1000004744",
   "runner_os": "macOS",
   "runner_arch": "ARM64",
   "github_repository": "WostGit/testrepo",
-  "github_sha": "0e906d9e03301c06cf929f63c1f695286a1ad29f",
-  "github_run_id": "26442982457",
-  "github_run_number": "7",
+  "github_sha": "73106e2811e426ff9332d37acc5cb36c6586b501",
+  "github_run_id": "26443067060",
+  "github_run_number": "9",
   "github_actor": "WostGit",
   "python_version": "3.11.9 (v3.11.9:de54cf5be3, Apr  2 2024, 07:12:50) [Clang 13.0.0 (clang-1300.0.29.30)]",
   "platform": "macOS-26.4-arm64-arm-64bit",
   "machine": "arm64",
   "macos_version": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4\nBuildVersion:\t\t25E246",
+  "hardware": "Hardware:\n\n    Hardware Overview:\n\n      Model Name: Apple Virtual Machine 1\n      Model Identifier: VirtualMac2,1\n      Model Number: VM0001LL/A\n      Chip: Apple M1 (Virtual)\n      Total Number of Cores: 3\n      Memory: 7 GB\n      System Firmware Version: 18000.101.7\n      OS Loader Version: 18000.101.7\n      Serial Number (system): ZTPG76HP2V\n      Hardware UUID: 5682F638-A90F-5C95-9BD2-924FFAEC7F16\n      Provisioning UDID: c5c850ca962cae2484d6dd9a04d5d4c28970eed0\n      Activation Lock Status: Disabled",
   "metal_device_probe": "Device(gpu, 0)",
-  "started_at": "2026-05-26T09:05:22Z",
-  "finished_at": "2026-05-26T09:05:32Z"
+  "started_at": "2026-05-26T09:09:20Z",
+  "finished_at": "2026-05-26T09:11:13Z"
 }

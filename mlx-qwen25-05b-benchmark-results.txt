@@ -1,32 +1,54 @@
-Qwen2.5 0.5B MLX Benchmark Results
-====================================
+Qwen2.5 0.5B MLX Extended Benchmark Results
+============================================
 Model: Qwen/Qwen2.5-0.5B-Instruct
-Runner: GitHub Actions 1000004742 (macOS, ARM64)
+Runner: GitHub Actions 1000004744 (macOS, ARM64)
 Machine: arm64
 Platform: macOS-26.4-arm64-arm-64bit
 GitHub repo: WostGit/testrepo
-Commit: 0e906d9e03301c06cf929f63c1f695286a1ad29f
-Run ID: 26442982457
-Run number: 7
-Actor: WostGit
-Started at: 2026-05-26T09:05:22Z
-Finished at: 2026-05-26T09:05:32Z
+Commit: 73106e2811e426ff9332d37acc5cb36c6586b501
+Run ID: 26443067060
+Run number: 9
+Started at: 2026-05-26T09:09:20Z
+Finished at: 2026-05-26T09:11:13Z
 
-Load time: 6.8359 s
-Warmup: 8 tokens in 1.529 s
-Benchmark: 64 requested tokens in 1.6323 s
-Throughput: 39.2082 requested tokens/s
+Load time: 7.3617 s
+Warmup: 16 tokens in 2.0309 s
 
-Prompt:
-Write one concise sentence about why local LLM inference benchmarks matter.
+Best observed case
+------------------
+Prompt: short
+Requested output tokens: 256
+Best throughput: 47.1769 requested tokens/s
+Average throughput: 46.0783 requested tokens/s
+Times: [5.6046, 5.4264, 5.6411]
 
-Generated text:
-Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs
+Sweep results
+-------------
+prompt,max_tokens,avg_tps,best_tps,median_tps,avg_seconds,best_seconds,prompt_tokens
+short,32,36.8339,38.1423,37.4901,0.8701,0.839,13
+short,64,38.3562,39.879,39.0734,1.6716,1.6049,13
+short,128,43.3263,44.0351,43.0042,2.9547,2.9068,13
+short,256,46.0783,47.1769,45.6768,5.5574,5.4264,13
+medium,32,35.9267,37.9383,36.3087,0.893,0.8435,19
+medium,64,41.4836,42.0467,41.5287,1.543,1.5221,19
+medium,128,42.2108,43.6607,42.5473,3.0355,2.9317,19
+medium,256,41.0855,43.1254,41.9416,6.2478,5.9362,19
+long,32,30.9685,31.964,30.4942,1.0338,1.0011,39
+long,64,36.9291,37.1102,37.0152,1.7331,1.7246,39
+long,128,42.5176,44.6799,41.7132,3.0144,2.8648,39
+long,256,42.9676,43.6008,42.6563,5.9586,5.8715,39
 
-macOS version:
+macOS version
+-------------
 ProductName:		macOS
 ProductVersion:		26.4
 BuildVersion:		25E246
 
-MLX default device:
+MLX default device
+------------------
 Device(gpu, 0)
+
+Sample output from best case
+----------------------------
+Local LLM inference benchmarks provide a standardized way to evaluate the performance of local language models, ensuring consistent and reliable results across different regions and contexts. This standardized approach helps to establish trust and credibility in the field of natural language processing, enabling researchers and practitioners to make informed decisions about the best models and techniques for their specific needs. Additionally, benchmarking can help to identify emerging trends and challenges in the field, allowing for ongoing research and development to keep pace with the rapid
+
