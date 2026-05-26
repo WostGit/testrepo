@@ -40,3 +40,4 @@ prompt_start name=long prompt_tokens=35
 case prompt=long max_tokens=64 repeat=1/3 seconds=1.6669 requested_tps=38.3946 output_tokens_encoded=64
 case prompt=long max_tokens=64 repeat=2/3 seconds=1.4837 requested_tps=43.1344 output_tokens_encoded=64
 case prompt=long max_tokens=64 repeat=3/3 seconds=1.3991 requested_tps=45.7439 output_tokens_encoded=64
+case prompt=long max_tokens=128 repeat=1/3 seconds=2.7267 requested_tps=46.9430 output_tokens_encoded=128
