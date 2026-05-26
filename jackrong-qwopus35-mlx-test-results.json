@@ -1,0 +1,16 @@
+{
+  "status": "no_matching_model",
+  "started_at": "2026-05-26T09:46:45Z",
+  "github_sha": "2ee0b351a35218ddbcbe69c406bbf7af8073d69b",
+  "github_run_id": "26444948011",
+  "github_run_number": "1",
+  "runner": "GitHub Actions 1000004750",
+  "runner_os": "macOS",
+  "runner_arch": "ARM64",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "macos_version": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4\nBuildVersion:\t\t25E246",
+  "discovered_models": [],
+  "candidates": [],
+  "message": "No jackrong model matching qwopus + 3.5 + mlx was found by Hugging Face Hub search.",
+  "finished_at": "2026-05-26T09:46:46Z"
+}

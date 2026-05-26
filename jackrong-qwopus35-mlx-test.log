@@ -1,0 +1,11 @@
+Starting jackrong Qwopus 3.5 MLX discovery/test
+GitHub SHA: 2ee0b351a35218ddbcbe69c406bbf7af8073d69b
+Runner: GitHub Actions 1000004750 macOS ARM64
+macOS: ProductName:		macOS | ProductVersion:		26.4 | BuildVersion:		25E246
+Searching Hugging Face models: author=jackrong search='qwopus'
+Searching Hugging Face models: author=jackrong search='Qwopus'
+Searching Hugging Face models: author=jackrong search='opus'
+Searching Hugging Face models: author=jackrong search='3.5'
+Found 0 jackrong models matching broad searches
+Filtered to 0 Qwopus 3.5 MLX-looking candidates
+Wrote result files
